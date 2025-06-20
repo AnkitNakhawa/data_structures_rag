@@ -1,0 +1,745 @@
+CHAPTER 10 
+Algorithm Design Techniques 
+10.1 
+First, we show that if N evenly divides P, then each of j(i−1)P + 1 through jiP must be placed as the ith job on 
+some processor. Suppose otherwise. Then in the supposed optimal ordering, we must be able to find some 
+jobs jx and jy such that jx is the tth job on some processor and jy is the t + 1th job on some processor but tx > ty. 
+Let jz be the job immediately following jx. If we swap jy and jz, it is easy to check that the mean processing 
+time is unchanged and thus still optimal. But now jy follows jx, which is impossible because we know that the 
+jobs on any processor must be in sorted order from the results of the one processor case. 
+Let je1, je2, . . . , jeM be the extra jobs if N does not evenly divide P. It is easy to see that the processing 
+time for these jobs depends only on how quickly they can be scheduled and that they must be the last 
+scheduled job on some processor. It is easy to see that the first M processors must have jobs j(i−1)P + 1 through 
+jiP + M; we leave the details to the reader. 
+10.3
+ 
+10.4 
+One method is to generate code that can be evaluated by a stack machine. The two operations are push (the 
+one node tree corresponding to) a symbol onto a stack and combine, which pops two trees off the stack, 
+merges them, and pushes the result back on. For the example in the text, the stack instructions are push(s), 
+push(nl), combine, push(t), combine, push(a), combine, push(e), combine, push(i), push (sp), combine, 
+combine. 
+By encoding a combine with a 0 and a push with a 1 followed by the symbol, the total extra space is 
+2N−1 bits if all the symbols are of equal length. Generating the stack machine code can be done with a simple 
+recursive procedure and is left to the reader. 
+10.6 
+Maintain two queues, Q1 and Q2. Q1 will store single-node trees in sorted order, and Q2 will store multinode 
+trees in sorted order. Place the initial single-node trees on Q1, enqueueing the smallest weight tree first. 
+Initially, Q2 is empty. Examine the first two entries of each of Q1 and Q2, and dequeue the two smallest. (This 
+requires an easily implemented extension to the ADT.) Merge the tree and place the result at the end of Q2. 
+Continue this step until Q1 is empty and only one tree is left in Q2. 
+10.10 To implement first fit, we keep track of bins bi, which have more room than any of the lower numbered bins. 
+A theoretically easy way to do this is to maintain a splay tree ordered by empty space. To insert w, we find 
+the smallest of these bins, which has at least w empty space; after w is added to the bin, if the resulting 
+amount of empty space is less than the inorder predecessor in the tree, the entry can be removed; otherwise, a 
+decreaseKey is performed. 
+To implement best fit, we need to keep track of the amount of empty space in each bin. As before, a 
+splay tree can keep track of this. To insert an item of size w, perform an insert of w. If there is a bin that can 
+fit the item exactly, the insert will detect it and splay it to the root; the item can be added and the root deleted. 
+Otherwise, the insert has placed w at the root (which eventually needs to be removed). We find the minimum 
+element M in the right subtree, which brings M to the right subtree’s root, attach the left subtree to M, and 
+delete w. We then perform an easily implemented decreaseKey on M to reflect the fact that the bin is less 
+empty. 
+10.11 Next fit: 12 bins (.42, .25, .27), (.07, .72), (.86, .09), (.44, .50), (.68), (.73), (.31), (.78, .17), (.79), (.37), (.73, 
+.23), (.30). 
+First fit: 10 bins (.42, .25, .27), (.07, .72, .09), (.86), (.44, .50), (.68, .31), (.73, .17), (.78), (.79), (.37, .23, 
+.30), (.73). 
+Best fit: 10 bins (.42, .25, .27), (.07, .72, .09), (.86), (.44, .50), (.68, .31), (.73, .23), (.78, .17), (.79), (.37, .30 
+), (.73). 
+First fit decreasing: 10 bins (.86, .09), (.79, .17), (.78, .07), (.73, .27), (.73, .25), (.72, .23), (.68, .31), (.50, 
+.44), (.42, .37), (.30). 
+Best fit decreasing: 10 bins (.86, .09), (.79, .17), (.78), (.73, .27), (.73, .25), (.72, .23), (.68, .31), (.50, .44), 
+(.42, .37, .07), (.30). 
+Note that use of 10 bins is optimal. 
+10.13 We prove the second case, leaving the first and third (which give the same results as Theorem 10.6) to the 
+reader. Observe that 
+log
+log
+(
+)
+log
+p
+p
+m
+p
+p
+N
+b
+m
+b
+=
+=
+ 
+Working this through, Equation (10.9) becomes 
+0
+(
+)
+(
+)
+log
+i
+k
+m
+m
+m
+p
+p
+i
+b
+T N
+T b
+a
+i
+b
+a
+=
+
+
+
+
+=
+=
+
+
+
+
+
+
+
+ 
+If a = bk, then 
+0
+1
+(
+)
+log
+(
+log
+)
+m
+m
+p
+p
+i
+m
+p
+p
+T N
+a
+b
+i
+O a m
+b
+=
++
+=
+=
+
+ 
+Since m = log N/log b, and am = Nk, and b is a constant, we obtain 
+1
+(
+)
+(
+log
+)
+k
+p
+T N
+O N
+N
++
+=
+ 
+10.14 The easiest way to prove this is by an induction argument. 
+10.15 Divide the unit square into N − 1 square grids each with side 1
+1
+N −. Since there are N points, some grid 
+must contain two points. Thus the shortest distance is conservatively given by at most
+2 (
+1)
+N −
+. 
+10.16 The results of the previous exercise imply that the width of the strip is 
+(1
+)
+O
+N . Because the width of the 
+strip is 
+(1
+)
+O
+N , and thus covers only 
+(1
+)
+O
+N of the area of the square, we expect a similar fraction of 
+the points to fall in the strip. Thus only 
+(
+)
+O N
+N points are expected in the strip; this is 
+(
+)
+O
+N . 
+10.18 The recurrence works out to 
+(
+)
+(2
+3)
+(
+3)
+(
+)
+T N
+T
+N
+T N
+O N
+=
++
++
+ 
+This is not linear, because the sum is not less than one. The running time is O(N log N). 
+10.19 The recurrence for median-of-median-of-seven partitioning is 
+(
+)
+(5
+7)
+(
+7)
+(
+)
+T N
+T
+N
+T N
+O N
+=
++
++
+ 
+If all we are concerned about is the linearity, then median-of-median-of-seven can be used. 
+10.22 We derive the values of s and δ, following the style in the original paper [17]. Let Rt,,X be the rank of element 
+t in some sample X. If a sample S of elements is chosen randomly from S, and |S| = s, |S | = N, then we’ve 
+already seen that 
+,
+,
+1
+(
+)
+1
+t S
+t S
+N
+E R
+R
+s
+
++
+=
++
+ 
+where E means expected value. For instance, if t is the third largest in a sample of 5 elements, then in a group 
+of 19 elements it is expected to be the tenth largest. We can also calculate the variance: 
+,
+,
+,
+2
+(
+)(
+1)(
+1)(
+)
+(
+)
+(
+)
+(
+1) (
+2)
+t S
+t S
+t S
+R
+s
+R
+N
+N
+s
+V R
+O N
+s
+s
+s
+−
++
++
+−
+=
+=
++
++
+ 
+We choose v1 and v2 so that 
+1
+1
+2
+2
+,
+,
+,
+,
+(
+)
+2
+(
+)
+(
+)
+2
+(
+)
+v
+S
+v
+S
+v
+S
+v
+S
+E R
+dV R
+k
+E R
+dV R
++
+
+
+−
+ 
+where d indicates how many variances we allow. (The larger d is, the less likely the element we are looking 
+for will not be in S.) 
+The probability that k is not between v1 and v2 is 
+2
+2
+( )
+(
+)
+d
+d
+erf x dx
+O e
+d
+
+−
+=
+
+ 
+If d = log1/2N, then this probability is  (1/N), specifically O(1/(N log N )). This means that the expected work 
+in this case is O(log−1N) because O(N) work is performed with very small probability. 
+These mean and variance equations imply 
+1,
+(
+1)
+(
+1)
+v
+S
+s
+R
+k
+d
+s
+N
+
++
+
+−
++
+ 
+and 
+2,
+(
+1)
+(
+1)
+v
+S
+s
+R
+k
+d
+s
+N
+
++
+
++
++
+ 
+This gives equation (A): 
+1 2
+log
+d
+s
+s
+N
+=
+=
+
+ 
+(A) 
+If we first pivot around v2, the cost is N comparisons. If we now partition elements in S that are less than 
+v2 around v1, the cost is 
+2,
+v
+S
+R
+, which has expected value 
+1
+1
+N
+s
+k
++
++
++ 
+. Thus the total cost of partitioning is 
+1
+1
+N
+s
+N
+k
++
++
++
++ 
+. The cost of the selections to find v1 and v2 in the sample S is O(s). Thus the total expected 
+number of comparisons is 
+( )
+(
+)
+N
+k
+O s
+O N
+s
++
++
++
+
+ 
+The low order term is minimized when 
+/
+s
+N
+s
+=
+
+ 
+(B) 
+Combining Equations (A) and (B), we see that 
+ 
+2
+1 2
+log
+s
+N
+sN
+N
+=
+=
+
+ 
+(C) 
+ 
+3 2
+1 2
+log
+s
+N
+N
+=
+ 
+(D) 
+ 
+2 3
+1 3
+log
+s
+N
+N
+=
+ 
+(E) 
+ 
+1 3
+2 3
+log
+N
+N
+=
+
+ 
+(F) 
+10.23 First, we calculate 12*43. In this case, XL = 1, XR = 2, YL = 4, YR = 3, D1 = −1, D2 = −1, XLYL = 4, XRYR = 6, 
+D1D2 = 1, D3 = 11, and the result is 516. 
+Next, we calculate 34*21. In this case, XL = 3, XR = 4, YL = 2, YR = 1, D1 = −1, D2 = −1, XLYL = 6, 
+XRYR = 4, D1D2 = 1, D3 = 11, and the result is 714. 
+Third, we calculate 22*22. Here, XL = 2, XR = 2, YL = 2, YR = 2, D1 = 0, D2 = 0, XLYL = 4, XRYR = 4, 
+D1D2 = 0, D3 = 8, and the result is 484. 
+Finally, we calculate 1234*4321. XL = 12, XR = 34, YL = 43, YR = 21, D1 = −22, D2 = −2. By previous 
+calculations, XLYL = 516, XRYR = 714, and D1D2 = 484. Thus D3 = 1714, and the result is 714 + 171400 + 
+5160000 = 5332114. 
+10.24 The multiplication evaluates to (ac−bd) + (bc + ad)i. Compute ac, bd, and (a−b)(d−c) + ac + bd. 
+10.25 The algebra is easy to verify. The problem with this method is that if X and Y are positive N bit numbers, 
+their sum might be an N + 1 bit number. This causes complications. 
+10.27 Matrix multiplication is not commutative, so the algorithm couldn’t be used recursively on matrices if 
+commutativity was used. 
+10.28 If the algorithm doesn’t use commutativity (which turns out to be true), then a divide and conquer algorithm 
+gives a running time of O(Nlog70143640) = O(N2.795). 
+10.29 1150 scalar multiplications are used if the order of evaluation is 
+1
+2
+3
+4
+5
+6
+((
+)(((
+)
+)
+))
+A A
+A A
+A A
+ 
+10.30 (a) Let the chain be a 1  1 matrix, a 1  A matrix, and an A  B matrix. Multiplication by using the first two 
+matrices first makes the cost of the chain A + AB. The alternative method gives a cost of AB + B, so if A > B, 
+then the algorithm fails. Thus a counterexample is multiplying a 1  1 matrix by a 1  3 matrix by a 3  2 
+matrix. 
+(b, c) A counterexample is multiplying a 1  1 matrix by a 1  2 matrix by a 2  3 matrix. 
+10.32 The optimal binary search tree is the same one that would be obtained by a greedy strategy: I is at the root 
+and has children and and it; a and or are leaves; the total cost is 2.14. 
+10.34 This theorem is from F. Yao’s paper, reference [60]. 
+10.35 A recursive procedure is clearly called for; if there is an intermediate vertex, stopOver on the path from s to t, 
+then we want to print out the path from s to stopOver and then stopOver to t. We don’t want to print out 
+stopOver twice, however, so the method does not print out the first or last vertex on the path and reserves that 
+for the driver. 
+ // Print the path between s and t, except do not print 
+ // the first or last vertex. Print a trailing " to " only. 
+ static void printPath1( int [][] path, int s, int t ) 
+ { 
+ int stopOver = path[ s ][ t ]; 
+ if( s ! = t && stopOver ! = -1 ) 
+ { 
+ printPath1( path, s, stopOver ); 
+ System.out.print( "" + stopOver + " to " ); 
+ printPath1( path, stopOver, t ); 
+ } 
+ } 
+ // Assume the existence of a path of length at least 1 
+ static void printPath( int [][] path, int s, int t ) 
+ { 
+ System.out.print( "" + s + " to " ); 
+ printPath1( path, s, t ); 
+ System.out.println( t ); 
+ } 
+ 
+10.39 If the modulus is a power of two, then the least significant bit of the “random” number oscillates. Thus flip 
+will always return heads and tails alternately, and the level chosen for a skip list insertion will always be one 
+or two. Consequently, the performance of the skip list will be (N) per operation. 
+10.40 (a) 25  32 mod 341, 210  1 mod 341. Since 322  1 mod 341, this proves that 341 is not prime. We can also 
+immediately conclude that 2340  1 mod 341 by raising the last equation to the 34th power. The exponentiation 
+would continue as follows: 220  1 mod 341, 221  2 mod 341, 242  4 mod 341, 284  16 mod 341, 285  32 
+mod 341, 2170  1 mod 341, and 2340  1 mod 341. 
+ 
+(b) If A = 2, then although 2560  1 mod 561, 2280  1 mod 561 proves that 561 is not prime. If A = 3, then 3561 
+ 375 mod 561, which proves that 561 is not prime. A = 4 obviously doesn’t fool the algorithm, since 4140  1 
+mod 561. A = 5 fools the algorithm: 51  5 mod 561, 52  25 mod 561, 54  64 mod 561, 58  169 mod 561, 
+516  511 mod 561, 517 = 311 mod 561, 534  229 mod 561, 535  23 mod 561, 570  529 mod 561, 5140  463 
+mod 561, 5280  67 mod 561, 5560  1 mod 561. 
+10.42 The two point sets are 0, 4, 6, 9, 16, 17 and 0, 5, 7, 13, 16, 17. 
+10.43 To find all point sets, we backtrack even if found = = true, and print out information when line 2 is executed. 
+In the case where there are some duplicate distances, it is possible that several symmetries will be printed. 
+10.44
+ 
+10.47 We place circles in order. Suppose we are trying to place circle j of radius rj. If some circle i of radius ri is 
+centered at xi, then j is tangent to i if it is placed at 
+2
+i
+i
+j
+x
+r rs
++
+. To see this, notice that the line connecting 
+the centers has length ri + rj, and the difference in y-coordinates of the centers is |rj−ri|. The difference in xcoordinates follows from the Pythagorean theorem. 
+ 
+To place circle j, we compute where it would be placed if it were tangent to each of the first j−1 circles, 
+selecting the maximum value. If this value is less than rj, then we place circle j at xj. The running time is 
+O(N2). 
+10.48 Construct a minimum spanning tree T of G, pick any vertex in the graph, and then find a path in T that goes 
+through every edge exactly once in each direction. (This is done by a depth-first search; see Exercise 9.31.) 
+This path has twice the cost of the minimum spanning tree, but it is not a simple cycle. 
+Make it a simple cycle, without increasing the total cost, by bypassing a vertex when it is seen a second 
+time (except that if the start vertex is seen, close the cycle) and going to the next unseen vertex on the path, 
+possibly bypassing several vertices in the process. The cost of this direct route cannot be larger than original 
+because of the triangle inequality. 
+If there were a tour of cost K, then by removing one edge on the tour, we would have a minimum 
+spanning tree of cost less than K (assuming that edge weights are positive). Thus the minimum spanning tree 
+is a lower bound on the optimal traveling salesman tour. This implies that the algorithm is within a factor of 2 
+of optimal. 
+10.49 If there are two players, then the problem is easy, so assume k > 1. If the players are numbered 1 through N, 
+then divide them into two groups: 1 through N/2 and N/2 + 1 though N. On the ith day, for 1  i  N/2, player 
+p in the second group plays players ((p + i)modN/2) + 1 in the first group. Thus after N/2 days, everyone in 
+group 1 has played everyone in group 2. In the last N/2−1 days, recursively conduct round-robin tournaments 
+for the two groups of players. 
+10.50 Divide the players into two groups of size 
+2
+N
+
+
+
+ and N/2, respectively, and recursively arrange the 
+players in any order. Then merge the two lists (declare that px > py if x has defeated y, and py > px if y has 
+defeated x; exactly one is possible) in linear time as is done in mergesort. 
+10.52 Divide and conquer algorithms (among others) can be used for both problems, but neither is trivial to 
+implement. See the computational geometry references for more information. 
+10.53 (a) Use dynamic programming. Let Sk = the best setting of words wk, wk + 1, . . . wN, Uk = the ugliness of this 
+setting, and lk = for this setting, (a link to) the word that starts the second line. 
+To compute Sk − 1, try putting wk − 1, wk, . . . , wM all on the first line for k < M and 
+1
+M
+i
+i k
+w
+L
+= −
+
+
+. 
+Compute the ugliness of each of these possibilities by, for each M, computing the ugliness of setting the 
+first line and adding Um + 1. Let M be the value of M that yields the minimum ugliness. Then Uk−1 = this 
+value, and lk−1 = M + 1. Compute values of U and l starting with the last word and working back to the first. 
+The minimum ugliness of the paragraph is U1; the actual setting can be found by starting at l1 and following 
+the links in l since this will yield the first word on each line. 
+ 
+(b) The running time is quadratic in the case where the number of words that can fit on a line is consistently 
+(N). The space is linear to keep the arrays U and l. If the line length is restricted to some constant, then the 
+running time is linear because only O(1) words can go on a line. 
+ 
+(c) Put as many words on a line as can fit. This clearly minimizes the number of lines, and hence the ugliness, 
+as can be shown by a simple calculation. 
+10.54 An obvious O(N2) solution to construct a graph with vertices 1, 2, . . . , N and place an edge (v,w) in G iff av < 
+aw. This graph must be acyclic, thus its longest path can be found in time linear in the number of edges; the 
+whole computation thus takes O(N2) time. 
+Let BEST(k) be the increasing subsequence of exactly k elements that has the minimum last element. Let 
+t be the length of the maximum increasing subsequence. We show how to update BEST(k) as we scan the 
+input array. Let LAST(k) be the last element in BEST(k). It is easy to show that if i < j, LAST(i) < LAST(j). 
+When scanning aM, find the largest k such that LAST(k) < aM. This scan takes O( log t) time because it can be 
+performed by a binary search. If k = t, then xM extends the longest subsequence, so increase t, and set BEST(t) 
+and LAST(t) (the new value of t is the argument). If k is 0 (that is, there is no k), then xM is the smallest 
+element in the list so far, so set BEST(1) and LAST(1), appropriately. Otherwise, we extend BEST(k) with xM, 
+forming a new and improved sequence of length k + 1. Thus we adjust BEST(k + 1) and LAST(k + 1). 
+Processing each element takes logarithmic time, so the total is O(N log N). 
+10.55 This is a classic program using dynamic programming. Let the matrix M[i][j] be the integer matrix that 
+contains the length of the longest common subsequence between the first i letters of A and the first j letters of 
+B. Since a string with no letters forms no matches, we have that M[0][j] = 0 and M[i][0] = 0. Further, if ith 
+letter of A matches the jth letter of B then we have that M[i1][j1] = 1 + M[i−1][j−1]. If there is not a match, 
+then M[i][j] = max (M[i][j−1], M[i−1][j]). This then forms the basis for the dynamic programming algorithm 
+for finding the length of the longest common subsequence. To find the actual sequence itself, we have to 
+trace back along the matrix. 
+import java.util.*; 
+public class CommonLetters 
+{ 
+ 
+ public static String lcs(String w1, String w2) 
+ { 
+ int i, j, n, m; 
+ String common = new String(); 
+ n = w1.length(); 
+ m = w2.length(); 
+ 
+ Integer M[][] = new Integer[n+1][m+1]; 
+ for (i = 0; i< = n; i++ ) 
+ M[i][0] = 0; 
+ for (j = 0; j< = m; j++ ) 
+ M[0][j] = 0; 
+ 
+ for (j = 1; j< = m; j++ ) 
+ for (i = 1; i< = n; i++ ) 
+ { 
+ if ( w1.charAt(i-1) = = w2.charAt(j-1) ) 
+ M[i][j] = 1 + M[i-1][j-1]; 
+ else 
+ M[i][j] = Math.max(M[i][j-1], M[i-1][j]); 
+ } 
+ 
+ // Now the trace back code 
+ i = n; 
+ j = m; 
+ while (i > 0 && j > 0) 
+ { 
+ if (M[i][j] == 1 + M[i-1][j-1] 
+ && w1.charAt(i-1) == w2.charAt(j-1) ) // there was a match 
+ { 
+ common = w1.charAt(i-1) + common; 
+ i--; 
+ j--; 
+ } 
+ else if (M[i-1][j] > M[i][j-1]) 
+ i--; 
+ else 
+ j--; 
+ } 
+ return common; 
+ } 
+ 
+ public static void main(String args[]) 
+ { 
+ String w1 = new String("dynamic"); 
+ String w2 = new String("programming"); 
+ 
+ String w3 = lcs(w1, w2); 
+ 
+ System.out.println(w3); 
+ } 
+} 
+ 
+10.57 (a) A dynamic programming solution resolves part (a). Let FITS (i, s) be 1 if a subset of the first i items sums 
+to exactly s; FITS(i, 0) is always 1. Then FITS(x, t) is 1 if either FITS(x−1, t−ax) or FITS(x−1, t) is 1, and 0 
+otherwise. 
+ 
+(b) This doesn’t show that P = NP, because the size of the problem is a function of N and log K. Only log K 
+bits are needed to represent K; thus an O (NK) solution is exponential in the input size. 
+10.58 (a) Let the minimum number of coins required to give x cents in change be COIN (x); COIN (0) = 0. Then 
+COIN (x) is one more than the minimum value of COIN(x − ci), giving a dynamic programming solution. 
+ 
+(b) Let WAYS (x, i) be the number of ways to make x cents in change without using the first i coin types. If 
+there are N types of coins, then WAYS (x, N) = 0 if x! = 0, and WAYS (0, i) = 1. Then WAYS (x, i−1) is equal 
+to the sum of WAYS (x − pci, i), for integer values of p no larger than x/ci (but including 0). 
+10.59 (a) Place eight queens randomly on the board, making sure that no two are on the same row or column. This 
+is done by generating a random permutation of 1..8. There are only 5040 such permutations, and 92 of these 
+give a solution. 
+10.60 (a) Since the knight leaves every square once, it makes B2 moves. If the squares are alternately colored black 
+and white like a checkerboard, then a knight always moves to a different colored square. If B is odd, then so 
+is B2, which means that at the end of the tour the knight will be on a different colored square than at the start 
+of the tour. Thus the knight cannot be at the original square. 
+10.61 (a) If the graph has a cycle, then the recursion does not always make progress toward a base case, and thus an 
+infinite loop will result. 
+ 
+(b) If the graph is acyclic, the recursive call makes progress, and the algorithm terminates. This could be 
+proved formally by induction. 
+ 
+(c) This algorithm is exponential. 
+10.62 (a) A simple dynamic programming algorithm, in which we scan in row order suffices. Each square 
+computes the maximum sized square for which it could be in the lower right corner. That information is 
+easily obtained from the square that is above it and the square that is to its left. 
+ 
+(b) See the April 1998 issue of Dr. Dobb’s Journal for an article by David Vandevoorde on the maximal 
+rectangle problem. 
+10.67 The final score is 20-16; black wins.

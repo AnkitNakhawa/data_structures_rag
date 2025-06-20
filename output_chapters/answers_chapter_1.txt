@@ -1,0 +1,457 @@
+CHAPTER 1 
+Introduction 
+1.4 
+The general way to do this is to write a procedure with heading 
+void processFile( String fileName ); 
+which opens fileName, does whatever processing is needed, and then closes it. If a line of the form 
+#include SomeFile 
+is detected, then the call 
+processFile( SomeFile ); 
+is made recursively. Self-referential includes can be detected by keeping a list of files for which a call to 
+processFile has not yet terminated, and checking this list before making a new call to processFile. 
+1.5 
+public static int ones( int n ) 
+{ 
+ if( n < 2 ) 
+ return n; 
+ return n % 2 + ones( n / 2 ); 
+} 
+ 
+1.7 
+(a) The proof is by induction. The theorem is clearly true for 0 < X  1, since it is true for X = 1, and for X < 
+1, log X is negative. It is also easy to see that the theorem holds for 1 < X  2, since it is true for X = 2, and 
+for X < 2, log X is at most 1. Suppose the theorem is true for p < X  2p (where p is a positive integer), and 
+consider any 2p < Y  4p (p  1). Then log Y = 1 + log(Y/2)< 1 + Y/2 < Y/2 + Y/2  Y, where the first 
+inequality follows by the inductive hypothesis. 
+ 
+(b) Let 2X = A. Then AB = (2X)B = 2XB. Thus log AB = XB. Since X = log A, the theorem is proved. 
+1.8 
+(a) The sum is 4/3 and follows directly from the formula. 
+ 
+(b) 
+2
+3
+2
+3
+3
+1
+2
+2
+4
+4
+4
+4
+4
+. 4
+1
+.
+S
+S
+=
++
++
++
+=
++
++
++
+ Subtracting the first equation from the second gives 
+2
+1
+2
+4
+4
+3
+1
+.
+S =
++
++
++
+By part (a), 3S = 4/3 so S = 4/9. 
+ 
+(c) 
+2
+3
+2
+3
+9
+9
+16
+1
+4
+4
+4
+4
+4
+4
+4
+4
+. 4
+1
+.
+S
+S
+=
++
++
++
+=
++
++
++
++
+ Subtracting the first equation from the second gives 
+2
+3
+3
+5
+7
+4
+4
+4
+3
+1
+.
+S =
++
++
++
++
+ Rewriting, we get 
+1
+4
+4
+0
+0
+3
+2
+.
+i
+i
+i
+i
+i
+S
+
+
+=
+=
+=
++
+
+
+ Thus 3S = 2(4/9) + 4/3 = 20/9. Thus S = 
+20/27. 
+ 
+(d) Let SN = 
+4
+0
+.
+N
+i
+i
+i
+
+=
+ Follow the same method as in parts (a) – (c) to obtain a formula for SN in terms of SN–1, 
+SN–2,..., S0 and solve the recurrence. Solving the recurrence is very difficult. 
+1.9 
+/2 1
+1
+1
+1
+/2
+1
+1
+ln
+ln
+/2
+ln 2.
+N
+N
+N
+i
+i
+i
+i
+N
+i
+i
+N
+N
+−
+
+
+
+
+=
+=
+=
+
+
+
+
+=
+−
+
+−
+
+
+
+
+ 
+1.10 
+24 = 16  1 (mod 5). (24)25  125 (mod 5). Thus 2100  1 (mod 5). 
+1.11 
+(a) Proof is by induction. The statement is clearly true for N = 1 and N = 2. Assume true for N = 1, 2, ... , k. 
+Then 
+1
+1
+1
+1
+.
+k
+k
+i
+i
+k
+i
+i
+F
+F
+F
++
++
+=
+=
+=
++
+
+
+ By the induction hypothesis, the value of the sum on the right is Fk+2 – 2 + Fk+1 = 
+Fk+3 – 2, where the latter equality follows from the definition of the Fibonacci numbers. This proves the claim 
+for N = k + 1, and hence for all N. 
+ 
+(b) As in the text, the proof is by induction. Observe that  + 1 = 2. This implies that  –1 +  –2 = 1. For N = 
+1 and N = 2, the statement is true. Assume the claim is true for N = 1, 2, ... , k. 
+1
+1
+k
+k
+k
+F
+F
+F
++
+−
+=
++
+ 
+ 
+by the definition, and we can use the inductive hypothesis on the right-hand side, obtaining 
+1
+1
+1
+1
+2
+1
+1
+2
+1
+1
+1
+ 
+(
+)
+k
+k
+k
+k
+k
+k
+k
+k
+F
+F
++
++
+−
++
+−
+−
++
++
++
+
++
+
++
+
++
+
+−
+−
+
+
+
+
+
+
+
+
+
+ 
+ 
+and proving the theorem. 
+ 
+(c) See any of the advanced math references at the end of the chapter. The derivation involves the use of 
+generating functions. 
+1.12 
+(a) 
+1
+1
+1
+(2
+1)
+2
+1
+N
+N
+N
+i
+i
+i
+i
+i
+=
+=
+=
+−
+=
+−
+
+
+ = N(N + 1) – N = N2. 
+ 
+(b) The easiest way to prove this is by induction. The case N = 1 is trivial. Otherwise, 
+1
+3
+3
+3
+1
+1
+2
+2
+3
+2
+2
+2
+2
+2
+2
+2
+2
+2
+1
+1
+(
+1)
+(
+1)
+(
+1)
+4
+(
+1)
+(
+1)
+4
+4
+4
+(
+1)
+4
+(
+1) (
+2)
+2
+(
+1) (
+2)
+2
+N
+N
+i
+i
+N
+i
+i
+N
+i
+N
+N
+N
+N
+N
+N
+N
+N
+N
+N
+N
+N
+N
+i
++
+=
+=
++
+=
+=
++
++
++
+=
++
++
+
+
+=
++
++
++
+
+
+
+
+
+
++
++
+=
++
+
+
+
+
++
++
+=
++
++
+
+
+= 
+
+
+
+
+
+= 
+
+
+
+
+
+

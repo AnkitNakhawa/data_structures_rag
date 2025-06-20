@@ -1,0 +1,521 @@
+CHAPTER 9 
+Graph Algorithms 
+9.1 
+The following ordering is arrived at by using a queue and assumes that vertices appear on an adjacency list 
+alphabetically. The topological order that results is then 
+s, G, D, H, A, B, E, I, F, C, t 
+9.2 
+Assuming the same adjacency list, the topological order produced when a stack is used is 
+s, G, H, D, A, E, I, F, B, C, t 
+Because a topological sort processes vertices in the same manner as a breadth-first search, it tends to 
+produce a more natural ordering. 
+9.4 
+The idea is the same as in Exercise 5.12. 
+9.5 
+(a) (Unweighted paths) A → B, A → C, A → B → G, A → B → E, A → C → D, A → B → E → F. 
+ 
+(b) (Weighted paths) A → C, A → B, A → B → G, A → B → G → E, A → B → G → E → F, A → B → G 
+→ E → D. 
+9.6 
+We’ll assume that Dijkstra’s algorithm is implemented with a priority queue of vertices that uses the 
+decreaseKey operation. Dijkstra’s algorithm uses |E| decreaseKey operations, which cost O(logd |V|) each, 
+and |V| deleteMin operations, which cost O(d logd |V|) each. The running time is thus O(|E| logd |V| + |V|d logd 
+|V|). The cost of the decreaseKey operations balances the insert operations when d = |E|/|V|. For a sparse 
+graph, this might give a value of d that is less than 2; we can’t allow this, so d is chosen to be 
+max(2, | | | | )
+E V
+
+
+
+. This gives a running time of O(|E| log2 + |E|/|V||V|), which is a slight theoretical improvement. 
+Moret and Shapiro report (indirectly) that d-heaps do not improve the running time in practice. 
+9.7 
+(a) The graph shown here is an example. Dijkstra’s algorithm gives a path from A to C of cost 2, when the 
+path from A to B to C has cost 1. 
+ 
+ 
+(b) We define a pass of the algorithm as follows: Pass 0 consists of marking the start vertex as known and 
+placing its adjacent vertices on the queue. For j > 0, pass j consists of marking as known all vertices on the 
+queue at the end of pass j − 1. Each pass requires linear time, since during a pass, a vertex is placed on the 
+queue at most once. It is easy to show by induction that if there is a shortest path from s to v containing k 
+edges, then dv will equal the length of this path by the beginning of pass k. Thus there are at most |V| passes, 
+giving an O(|E||V|) bound. 
+9.8 
+See the comments for Exercise 9.19. 
+9.10 
+(a) Use an array count such that for any vertex u, count[u] is the number of distinct paths from s to u known 
+so far. When a vertex v is marked as known, its adjacency list is traversed. Let w be a vertex on the adjacency 
+list. 
+If dv + cv,w = dw, then increment count[w] by count[v] because all shortest paths from s to v with last edge 
+(v, w) give a shortest path to w. 
+If dv + cv,w < dw, then pw and dw get updated. All previously known shortest paths to w are now invalid, 
+but all shortest paths to v now lead to shortest paths for w, so set count[w] to equal count[v]. 
+Note: Zero-cost edges mess up this algorithm. 
+ 
+(b) Use an array numEdges such that for any vertex u, numEdges[u] is the shortest number of edges on a path 
+of distance du from s to u known so far. Thus numEdges is used as a tiebreaker when selecting the vertex to 
+mark. As before, v is the vertex marked known, and w is adjacent to v. 
+If dv + cv,w = dw, then change pw to v and numEdges[w] to numEdges[v] + 1 if numEdges[v] + 1 < 
+numEdges[w]. 
+If dv + cv,w < dw, then update pw and dw, and set numEdges[w] to numEdges[v] + 1. 
+9.11 
+(This solution is not unique.) 
+First, send four units of flow along the path s, G, H, I, t. This gives the following residual graph: 
+ 
+Next, send three units of flow along s, D, E, F, t. The residual graph that results is as follows: 
+ 
+Now two units of flow are sent along the path s, G, D, A, B, C, t, yielding the following residual graph: 
+ 
+One unit of flow is then sent along s, D, A, E, C, t: 
+ 
+Finally, one unit of flow can go along the path s, A, E, C, t: 
+ 
+The preceding residual graph has no path from s to t. Thus the algorithm terminates. The final flow 
+graph, which carries 11 units, is as follows: 
+ 
+This flow is not unique. For instance, two units of the flow that goes from G to D to A to E could go by 
+G to H to E. 
+9.12 
+Let T be the tree with root r, and children r1, r2, . . . , rk, which are the roots of T1, T2, . . . , Tk, which have 
+maximum incoming flow of c1, c2, . . . , ck, respectively. By the problem statement, we may take the 
+maximum incoming flow of r to be infinity. The recursive pseudo-method findMaxFlow( T, incomingCap ) 
+finds the value of the maximum flow in T (finding the actual flow is a matter of bookkeeping); the flow is 
+guaranteed not to exceed incomingCap. 
+If T is a leaf, then findMaxFlow returns incomingCap since we have assumed a sink of infinite capacity. 
+Otherwise, a standard postorder traversal can be used to compute the maximum flow in linear time. 
+// FlowType is an int or double 
+static FlowType findMaxFlow( Tree T, FlowType incomingCap ) 
+{ 
+ FlowType childFlow, totalFlow; 
+ if( T.hasNoSubtrees( ) ) 
+ return incomingCap; 
+ else 
+ { 
+ totalFlow = 0; 
+ for( each subtree $T_i$ of T ) 
+ { 
+ childFlow = findMaxFlow( $T_i$, min( incomingCap, $c_i$ 
+) ); 
+ totalFlow += childFlow; 
+ incomingCap -= childFlow; 
+ } 
+ return totalFlow; 
+ } 
+} 
+ 
+9.13 
+(a) Assume that the graph is connected and undirected. If it is not connected, then apply the algorithm to the 
+connected components. Initially, mark all vertices as unknown. Pick any vertex v, color it red, and perform a 
+depth-first search. When a node is first encountered, color it blue if the DFS has just come from a red node, 
+and red otherwise. If at any point, the depth-first search encounters an edge between two identical colors, 
+then the graph is not bipartite; otherwise, it is. A breadth-first search (that is, using a queue) also works. This 
+problem, which is essentially two-coloring a graph, is clearly solvable in linear time. This contrasts with 
+three-coloring, which is NP-complete. 
+ 
+(b) Construct an undirected graph with a vertex for each instructor, a vertex for each course, and an edge 
+between (v, w) if instructor v is qualified to teach course w. Such a graph is bipartite; a matching of M edges 
+means that M courses can be covered simultaneously. 
+ 
+(c) Give each edge in the bipartite graph a weight of 1, and direct the edge from the instructor to the course. 
+Add a vertex s with edges of weight 1 from s to all instructor vertices. Add a vertex t with edges of weight 1 
+from all course vertices to t. The maximum flow is equal to the maximum matching. 
+ 
+(d) The running time is O(|E||V|half) because this is the special case of the network flow problem mentioned in 
+the text. All edges have unit cost, and every vertex (except s and t) has either an indegree or outdegree of 1. 
+9.14 
+(a) This is a slight modification of Dijkstra’s algorithm. Let fi be the best flow from s to i at any point in the 
+algorithm. Initially, fi = 0 for all vertices, except s: fs = inf. 
+At each stage, we select v such that fv is maximum among all unknown vertices. Then for each w adjacent to 
+v, the cost of the flow to w using v as an intermediate is min(fv, cv, w). If this value is higher than the current 
+value of fw, then fw and pw are updated. 
+9.15 
+One possible minimum spanning tree is shown here. This solution is not unique. 
+ 
+9.16 
+Both work correctly. The proof makes no use of the fact that an edge must be nonnegative. 
+9.17 
+The proof of this fact can be found in any good graph theory book. A more general theorem follows: 
+Theorem. 
+Let G = (V, E) be an undirected, unweighted graph, and let A be the adjacency matrix for G (which 
+contains either 1s or 0s). Let D be the matrix such that D[v][v] is equal to the degree of v; all nondiagonal 
+matrices are 0. Then the number of spanning trees of G is equal to the determinant of A + D. 
+9.19 
+The obvious solution using elementary methods is to bucket sort the edge weights in linear time. Then the 
+running time of Kruskal’s algorithm is dominated by the union/find operations and is O(|E|  (|E|, |V|)). The 
+Van-Emde Boas priority queues (see Chapter 6 references) give an immediate O(|E| log log |V|) running time 
+for Dijkstra’s algorithm, but this isn’t even as good as a Fibonacci heap implementation. 
+More sophisticated priority queue methods that combine these ideas have been proposed, including M. 
+L. Fredman and D. E. Willard, “Trans-dichotomous Algorithms for Minimum Spanning Trees and Shortest 
+Paths,” Proceedings of the Thirty-first Annual IEEE Symposium on the Foundations of Computer Science 
+(1990), 719--725. The paper presents a linear-time minimum spanning tree algorithm and an O(|E| + |V| log 
+|V|/ log log |V|) implementation of Dijkstra’s algorithm if the edge costs are suitably small. Various 
+improvements have been discovered since. 
+9.20 
+Since the minimum spanning tree algorithm works for negative edge costs, an obvious solution is to replace 
+all the edge costs by their negatives and use the minimum spanning tree algorithm. Alternatively, change the 
+logic so that < is replaced by >, min by max, and vice versa. 
+9.21 
+We start the depth-first search at A and visit adjacent vertices alphabetically. The articulation points are C, E, 
+and F. C is an articulation point because low[B]  num[C]; E is an articulation point because low[H]  
+num[E]; and F is an articulation point because low[G]  num[F]. The depth-first spanning tree is shown in the 
+following Figure. 
+ 
+9.22 
+The only difficult part is showing that if some nonroot vertex a is an articulation point, then there is no back 
+edge between any proper descendent of a and a proper ancestor of a in the depth-first spanning tree. We 
+prove this by a contradiction. 
+Let u and v be two vertices such that every path from u to v goes through a. At least one of u and v is a 
+proper descendent of a, since otherwise there is a path from u to v that avoids a. Assume without loss of 
+generality that u is a proper descendent of a. Let c be the child of a that contains u as a descendent. If there is 
+no back edge between a descendent of c and a proper ancestor of a, then the theorem is true immediately, so 
+suppose for the sake of contradiction that there is a back edge (s, t). Then either v is a proper descendent of a 
+or it isn’t. In the second case, by taking a path from u to s to t to v, we can avoid a, which is a contradiction. 
+In the first case, clearly v cannot be a descendent of c, so let c be the child of a that contains v as a 
+descendent. By a similar argument as before, the only possibility is that there is a back edge (s, t) between a 
+descendent of c and a proper ancestor of a. Then there is a path from u to s to t to t to s to v; this path avoids 
+a, which is also a contradiction. 
+9.23 
+(a) Do a depth-first search and count the number of back edges. 
+ 
+(b) This is the feedback edge set problem. See reference [1] or [20]. 
+9.24 
+Let (v, w) be a cross edge. Since at the time w is examined it is already marked, and w is not a descendent of 
+v (else it would be a forward edge), processing for w is already complete when processing for v commences. 
+Thus under the convention that trees (and subtrees) are placed left to right, the cross edge goes from right to 
+left. 
+9.25 
+Suppose the vertices are numbered in preorder and postorder. 
+If (v, w) is a tree edge, then v must have a smaller preorder number than w. It is easy to see that the 
+converse is true. 
+If (v, w) is a cross edge, then v must have both a larger preorder and postorder number than w. The 
+converse is shown as follows: Because v has a larger preorder number, w cannot be a descendent of v; 
+because it has a larger postorder number, v cannot be a descendent of w; thus they must be in different trees. 
+Otherwise, v has a larger preorder number but is not a cross edge. To test if (v, w) is a back edge, keep a 
+stack of vertices that are active in the depth-first search call (that is, a stack of vertices on the path from the 
+current root). By keeping a bit array indicating presence on the stack, we can easily decide if (v, w) is a back 
+edge or a forward edge. 
+9.26 
+The first depth-first spanning tree is 
+ 
+Gr, with the order in which to perform the second depth-first search, is shown next. The strongly 
+connected components are F and all other vertices. 
+ 
+9.28 
+This is the algorithm mentioned in the references. 
+9.29 
+Because an edge (v, w) is implicitly processed, it is placed on a stack. If v is determined to be an articulation 
+point because low[w]  num[v], then the stack is popped until edge (v, w) is removed: The set of popped 
+edges is a biconnected component. An edge (v, w) is not placed on the stack if the edge (w, v) was already 
+processed as a back edge. 
+9.30 
+Let (u, v) be an edge of the breadth-first spanning tree. (u, v) are connected, thus they must be in the same 
+tree. Let the root of the tree be r; if the shortest path from r to u is du, then u is at level du; likewise, v is at 
+level dv. If (u, v) were a back edge, then du > dv, and v is visited before u. But if there were an edge between u 
+and v, and v is visited first, then there would be a tree edge (v, u), and not a back edge (u, v). Likewise, if (u, 
+v) were a forward edge, then there is some w, distinct from u and v, on the path from u to v; this contradicts 
+the fact that dv = dw + 1. Thus only tree edges and cross edges are possible. 
+9.31 
+Perform a depth-first search. The return from each recursive call implies the edge traversal in the opposite 
+direction. The time is clearly linear. 
+9.33 
+If there is an Euler circuit, then it consists of entering and exiting nodes; the number of entrances clearly must 
+equal the number of exits. If the graph is not strongly connected, there cannot be a cycle connecting all the 
+vertices. To prove the converse, an algorithm similar in spirit to the undirected version can be used. 
+9.34 
+Neither of the proposed algorithms works. For example, as shown, a depth-first search of a biconnected graph 
+that follows A, B, C, D is forced back to A, where it is stranded. 
+ 
+9.35 
+These are classic graph theory results. Consult any graph theory text for a solution to this exercise. 
+9.36 
+All the algorithms work without modification for multigraphs. 
+9.37 
+Obviously, G must be connected. If each edge of G can be converted to a directed edge and produce a 
+strongly connected graph G, then G is convertible. 
+Then, if the removal of a single edge disconnects G, G is not convertible, since this would also 
+disconnect G. This is easy to test by checking to see if there are any single-edge biconnected components. 
+Otherwise, perform a depth-first search on G and direct each tree edge away from the root and each back 
+edge toward the root. The resulting graph is strongly connected because, for any vertex v, we can get to a 
+higher level than v by taking some (possibly 0) tree edges and a back edge. We can apply this until we 
+eventually get to the root, and then follow tree edges down to any other vertex. 
+9.38 
+(b) Define a graph where each stick is represented by a vertex. If stick Si is above Sj and thus must be 
+removed first, then place an edge from Si to Sj. A legal pick-up ordering is given by a topological sort; if the 
+graph has a cycle, then the sticks cannot be picked up. 
+9.39 
+Use a depth-first search, marking colors when a new vertex is visited, starting at the root, and returning false 
+if a color clash is detected along a backedge. 
+9.40 
+Use a greedy algorithm: At each step, choose the vertex with the highest connectivity to vertices not already 
+chosen. Proof that only 1/4 of the edges are not touched can be done with a straightforward calculation of 
+edges that remain after each step. With E edges and V vertices, the total connectivity is 2E at the start, so at 
+most (V − 2)/V of the edges remain after the first step. Then at most (V − 3)/(V − 1) of those edges remain 
+after the second step, and so on. Multiply it out, and you get about 1/4 of the edges remaining. 
+9.41 
+If no vertex has indegree 0, we can find a cycle by tracing backwards through vertices with positive indegree; 
+since every vertex on the trace back has a positive indegree, we eventually reach a vertex twice, and the cycle 
+has been found. 
+9.42 
+The basic idea is that we examine cell A[s,t]: If it is 0, then t is not a sink; otherwise s is not a sink. Each 
+examination can eliminate one vertex; after |V| − 1 queries, we have one candidate that can be checked in 
+2|V|−1 additional tests. To do the first step, after the test A[s,t] is performed, replace the eliminated vertex 
+with the next vertex in the the sequence of vertices. 
+9.43 
+Perform a postorder traversal, computing node sizes; the first node that has a size greater than N/2 vertices is 
+the node to remove. 
+9.44 
+This is essentially the algorithm described in Section 9.3.4 for critical paths. 
+9.45 
+These are all recursive depth first searches. 
+9.46 
+This is a single source unweighted shortest path problem. 
+9.47 
+This is a weighted shortest path problem: Adjacent squares have a cost of 1 if there is no wall, and P + 1 if 
+there is a wall. 
+9.48 
+(a) Use the same ideas from the shortest path algorithm, but place unmarked adjacent squares at the front of a 
+double-ended queue, and unmarked adjacent wall-separate squares at the end. Note that when dequeues are 
+performed from the front, a stale square (in other words, one that was marked after it entered the deque) may 
+emerge and would be ignored. 
+ 
+(b) Use Exercise 9.47, with a penalty equal to the number of squares in the maze. 
+9.49 
+The following implementation does not use the map class. The use of ArrayList instead will speed up the 
+algorithm since access now takes O(1) instead of O(log N), if the list of words can fit in main memory. One 
+could use maps to also solve the problem. Using maps with keys and data both as strings allows the maps to 
+store adjacent words in the word ladder directly. The Chapter 4 code can be modified for this problem by just 
+adding words that differ in length by one then checking to see if the cost should be 1 or p when Dijkstra’s 
+algorithm is applied. 
+ 
+import java.util.*; 
+import java.io.*; 
+ 
+ 
+public class WordLadder 
+{ 
+ 
+ static final int INFINITY = 99999; 
+ 
+ private static class Vertex 
+ { 
+ Vertex() 
+ { 
+ adj = new ArrayList<Integer>(); 
+ weight = new ArrayList<Integer>(); 
+ } 
+ public ArrayList<Integer> adj; // Adjacency list 
+ public ArrayList<Integer> weight; // Weight list 
+ public boolean known; 
+ public int dist; 
+ public String name; 
+ public int path; 
+ }; 
+ 
+ /** 
+ * Print shortest path to v after dijkstra has run. 
+ * Assume that the path exists. 
+ */ 
+ static void printPath( int vIndex, ArrayList<Vertex> V ) 
+ { 
+ if( vIndex > = 0 && V.get(vIndex).path > -1 ) 
+ { 
+ printPath( V.get(vIndex).path, V ); 
+ System.out.println(" to "); 
+ } 
+ System.out.println(V.get(vIndex).name); 
+ } 
+ 
+ static void dijkstra( int sIndex, int tIndex, ArrayList<Vertex> 
+Vertices ) 
+ { 
+ int smallestDist; 
+ int smallestVertex; 
+ Vertex v, s, t; 
+ int n = Vertices.size(); 
+ 
+ Vertices.get(sIndex).dist = 0; 
+ 
+ for ( ; ; ) 
+ { 
+ smallestDist = INFINITY; 
+ smallestVertex = -1; 
+ 
+ for( int i = 0; i<n; i++) 
+ { 
+ if (!Vertices.get(i).known && Vertices.get(i).dist < 
+smallestDist ) 
+ { 
+ smallestDist = Vertices.get(i).dist; 
+ smallestVertex = i; 
+ } 
+ } 
+ 
+ if( smallestVertex < 0 || smallestVertex = = tIndex ) 
+ break; 
+ 
+ Vertices.get(smallestVertex).known = true; 
+ v = Vertices.get(smallestVertex); 
+ 
+ for ( int j = 0; j < v.adj.size(); j++ ) 
+ { 
+ if ( !(Vertices.get( v.adj.get(j) ).known) ) 
+ { 
+ if ( v.dist + v.weight.get(j) < Vertices.get( v.adj.get(j) 
+).dist ) 
+ { 
+ // Update w 
+ Vertices.get( v.adj.get(j) ).dist = v.dist + 
+v.weight.get(j); 
+ Vertices.get( v.adj.get(j) ).path = smallestVertex; 
+ } 
+ } 
+ } 
+ } 
+ } 
+ 
+ static ArrayList<Vertex> readWords( Scanner in ) 
+ { 
+ String oneLine = new String(); 
+ ArrayList<Vertex> v = new ArrayList<Vertex>(); 
+ while ( in.hasNext() ) 
+ { 
+ oneLine = in.next(); 
+ Vertex w = new Vertex(); 
+ w.name = oneLine; 
+ w.known = false; 
+ w.path = -1; 
+ w.dist = INFINITY; 
+ v.add( w ) ; 
+ } 
+ return v; 
+ } 
+ 
+ static int oneCharOff( String word1, String word2, int p) 
+ { 
+ String big, small, shrink; 
+ int cost; 
+ 
+ if( Math.abs ((int)(word1.length() - word2.length())) > 1 ) 
+ return 0; 
+ else 
+ if (word1.length() == word2.length()) 
+ { 
+ int diffs = 0; 
+ 
+ for( int i = 0; i < word1.length( ); i++ ) 
+ if( word1.charAt(i) ! = word2.charAt(i) ) 
+ if( + + diffs > 1 ) 
+ return 0; 
+ if (diffs == 1) 
+ return 1; 
+ } 
+ 
+ if (word2.length() > word1.length ()) 
+ { 
+ big = word2; 
+ small = word1; 
+ } 
+ else 
+ { 
+ big = word1; 
+ small = word2; 
+ } 
+ for (int i = 0; i < big.length(); i++ ) 
+ { 
+ shrink = big.substring(0,i) + big.substring(i + 1, 
+big.length()); 
+ if (shrink.compareTo(small) == 0) 
+ return p; 
+ } 
+ 
+ return 0; 
+ } 
+ 
+ // fills the adjacency lists for all words in the dictionary 
+ static void fillAdjacencies(ArrayList<Vertex> words, int p) 
+ { 
+ int cost; 
+ 
+ for (int i = 0 ; i < words.size(); i++ ) 
+ for (int j = i + 1 ; j < words.size(); j++ ) 
+ { 
+ cost = oneCharOff(words.get(i).name, words.get(j).name,p); 
+ if (cost > 0) 
+ { 
+ words.get(i).adj.add(j); 
+ words.get(i).weight.add(cost); 
+ words.get(j).adj.add(i); 
+ words.get(j).weight.add(cost); 
+ } 
+ } 
+ } 
+ 
+ public static void main(String args[]) 
+ { 
+ int p=0; 
+ int w1Index, w2Index; 
+ String w1 = new String(); 
+ String w2 = new String(); 
+ Scanner input = new Scanner(System.in); 
+ Scanner dict; 
+ 
+ try 
+ { 
+ dict = new Scanner(new File("dict.txt")); 
+ } 
+ catch (Exception e) 
+ { 
+ System.out.println("Error opening dictionary file"); 
+ return; 
+ } 
+ 
+ System.out.println("What is the cost of single char deletions: "); 
+ p = input.nextInt(); 
+ 
+ ArrayList<Vertex> words = readWords( dict ); 
+ do 
+ { 
+ System.out.println("Enter two words in the dictionary: "); 
+ w1 = input.next(); 
+ w2 = input.next(); 
+ // Find their indices (here is where a map would be superior 
+ // However all other accesses are now in 0(1) time 
+ for (w1Index = 0; w1Index < words.size() 
+ && (words.get(w1Index).name).compareTo(w1) ! = 0 ; 
+w1Index++); 
+ for (w2Index = 0; w2Index < words.size() 
+ && (words.get(w2Index).name).compareTo(w2) ! = 0 ; 
+w2Index ++ ); 
+ } while (w1Index > = words.size() || w2Index > = words.size()); 
+ 
+ fillAdjacencies(words, p); // make the adjacency list 
+ dijkstra( w1Index, w2Index, words ); // use dijkstra’s algorithm 
+ System.out.println(); 
+ printPath(w2Index, words); // print the result 
+ System.out.println(); 
+ } 
+} 
+ 
+9.50 
+Each team is a vertex; if X has defeated Y, draw an edge from X to Y. 
+9.51 
+Each currency is a vertex; draw an edge of cost log C between vertices to represent a currency exchange rate, 
+C. A negative cycle represents an arbitrage play. 
+9.52 
+Each course is a vertex; if X is a prerequisite for Y, draw an edge from X to Y Find the longest path in the 
+acyclic graph. 
+9.53 
+Each actor is a vertex; an edge connects two vertices if the actors have a shared movie role. The graph is not 
+drawn explicitly, but edges can be deduced as needed by examining cast lists. 
+9.54 
+Given an instance of clique, form the graph G that is the complement graph of G: (v, w) is an edge in G if 
+and only if it is not an edge in G. Then G has a vertex cover of at most |V| − K if G has a clique of size at 
+least K. (The vertices that form the vertex cover are exactly those not in the clique.) The details of the proof 
+are left to the reader. 
+9.55 
+A proof can be found in Garey and Johnson [20]. 
+9.56 
+Clearly, the baseball card collector problem (BCCP) is in NP, because it is easy to check if K packets contain 
+all the cards. To show it is NP-complete, we reduce vertex cover to it. Let G = (V, E), and let K be an 
+instance of vertex cover. For each vertex v, place all edges adjacent to v in packet Pv. The K packets will 
+contain all edges (baseball cards) if G can be covered by K vertices.

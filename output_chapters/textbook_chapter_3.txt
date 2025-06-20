@@ -1,0 +1,2293 @@
+C H A P T E R 3
+Lists, Stacks, and Queues
+This chapter discusses three of the most simple and basic data structures. Virtually every
+significant program will use at least one of these structures explicitly, and a stack is always
+implicitly used in a program, whether or not you declare one. Among the highlights of this
+chapter, we will
+r Introduce the concept of Abstract Data Types (ADTs).
+r Show how to efficiently perform operations on lists.
+r Introduce the stack ADT and its use in implementing recursion.
+r Introduce the queue ADT and its use in operating systems and algorithm design.
+In this chapter, we provide code that implements a significant subset of two library
+classes: ArrayList and LinkedList.
+3.1 Abstract Data Types (ADTs)
+An abstract data type (ADT) is a set of objects together with a set of operations. Abstract
+data types are mathematical abstractions; nowhere in an ADT’s definition is there any mention of how the set of operations is implemented. Objects such as lists, sets, and graphs,
+along with their operations, can be viewed as abstract data types, just as integers, reals,
+and booleans are data types. Integers, reals, and booleans have operations associated with
+them, and so do abstract data types. For the set ADT, we might have such operations as add,
+remove, and contains. Alternatively, we might only want the two operations union and find,
+which would define a different ADT on the set.
+The Java class allows for the implementation of ADTs, with appropriate hiding of implementation details. Thus any other part of the program that needs to perform an operation
+on the ADT can do so by calling the appropriate method. If for some reason implementation details need to be changed, it should be easy to do so by merely changing the routines
+that perform the ADT operations. This change, in a perfect world, would be completely
+transparent to the rest of the program.
+There is no rule telling us which operations must be supported for each ADT; this is a
+design decision. Error handling and tie breaking (where appropriate) are also generally up
+to the program designer. The three data structures that we will study in this chapter are
+57
+58
+Chapter 3
+Lists, Stacks, and Queues
+primary examples of ADTs. We will see how each can be implemented in several ways, but
+if they are done correctly, the programs that use them will not necessarily need to know
+which implementation was used.
+3.2 The List ADT
+We will deal with a general list of the form A0, A1, A2, . . ., AN−1. We say that the size of
+this list is N. We will call the special list of size 0 an empty list.
+For any list except the empty list, we say that Ai follows (or succeeds) Ai−1 (i < N)
+and that Ai−1 precedes Ai (i > 0). The first element of the list is A0, and the last element
+is AN−1. We will not define the predecessor of A0 or the successor of AN−1. The position
+of element Ai in a list is i. Throughout this discussion, we will assume, to simplify matters,
+that the elements in the list are integers, but in general, arbitrarily complex elements are
+allowed (and easily handled by a generic Java class).
+Associated with these “definitions” is a set of operations that we would like to perform
+on the list ADT. Some popular operations are printList and makeEmpty, which do the obvious
+things; find, which returns the position of the first occurrence of an item; insert and
+remove, which generally insert and remove some element from some position in the list;
+and findKth, which returns the element in some position (specified as an argument). If the
+list is 34, 12, 52, 16, 12, then find(52) might return 2; insert(x,2) might make the list
+into 34, 12, x, 52, 16, 12 (if we insert into the position given); and remove(52) might turn
+that list into 34, 12, x, 16, 12.
+Of course, the interpretation of what is appropriate for a method is entirely up to the
+programmer, as is the handling of special cases (for example, what does find(1) return
+above?). We could also add operations such as next and previous, which would take a
+position as argument and return the position of the successor and predecessor, respectively.
+3.2.1 Simple Array Implementation of Lists
+All these instructions can be implemented just by using an array. Although arrays are created with a fixed capacity, we can create a different array with double the capacity when
+needed. This solves the most serious problem with using an array, namely that historically,
+to use an array, an estimate of the maximum size of the list was required. This estimate is
+not needed in Java, or any modern programming language. The following code fragment
+illustrates how an array, arr, which initially has length 10, can be expanded as needed:
+int [ ] arr = new int[ 10 ];
+...
+// Later on we decide arr needs to be larger.
+int [ ] newArr = new int[ arr.length * 2 ];
+for( int i = 0; i < arr.length; i++ )
+newArr[ i ] = arr[ i ];
+arr = newArr;
+3.2
+The List ADT
+59
+An array implementation allows printList to be carried out in linear time, and the
+findKth operation takes constant time, which is as good as can be expected. However,
+insertion and deletion are potentially expensive, depending on where the insertions and
+deletions occur. In the worst case, inserting into position 0 (in other words, at the front
+of the list) requires pushing the entire array down one spot to make room, and deleting
+the first element requires shifting all the elements in the list up one spot, so the worst
+case for these operations is O(N). On average, half of the list needs to be moved for either
+operation, so linear time is still required. On the other hand, if all the operations occur at
+the high end of the list, then no elements need to be shifted, and then adding and deleting
+take O(1) time.
+There are many situations where the list is built up by insertions at the high end,
+and then only array accesses (i.e., findKth operations) occur. In such a case, the array is
+a suitable implementation. However, if insertions and deletions occur throughout the list,
+and in particular, at the front of the list, then the array is not a good option. The next
+subsection deals with the alternative: the linked list.
+3.2.2 Simple Linked Lists
+In order to avoid the linear cost of insertion and deletion, we need to ensure that the list
+is not stored contiguously, since otherwise entire parts of the list will need to be moved.
+Figure 3.1 shows the general idea of a linked list.
+The linked list consists of a series of nodes, which are not necessarily adjacent in
+memory. Each node contains the element and a link to a node containing its successor. We
+call this the next link. The last cell’s next link references null.
+To execute printList or find(x) we merely start at the first node in the list and then
+traverse the list by following the next links. This operation is clearly linear-time, as in
+the array implementation, although the constant is likely to be larger than if an array
+implementation were used. The findKth operation is no longer quite as efficient as an
+array implementation; findKth(i) takes O(i) time and works by traversing down the list in
+the obvious manner. In practice, this bound is pessimistic, because frequently the calls to
+findKth are in sorted order (by i). As an example, findKth(2), findKth(3), findKth(4), and
+findKth(6) can all be executed in one scan down the list.
+The remove method can be executed in one next reference change. Figure 3.2 shows
+the result of deleting the third element in the original list.
+The insert method requires obtaining a new node from the system by using a new call
+and then executing two reference maneuvers. The general idea is shown in Figure 3.3. The
+dashed line represents the old next reference.
+A0
+A1
+A2
+A3
+A4
+Figure 3.1 A linked list
+60
+Chapter 3
+Lists, Stacks, and Queues
+A0
+A1
+A2
+A3
+A4
+Figure 3.2 Deletion from a linked list
+A0
+A1
+A2
+A3
+A4
+X
+Figure 3.3 Insertion into a linked list
+As we can see, in principle, if we know where a change is to be made, inserting or
+removing an item from a linked list does not require moving lots of items and instead
+involves only a constant number of changes to node links.
+The special case of adding to the front or removing the first item is thus a constanttime operation, presuming of course that a link to the front of the linked list is maintained.
+The special case of adding at the end (i.e., making the new item as the last item) can be
+constant-time, as long as we maintain a link to the last node. Thus, a typical linked list
+keeps links to both ends of the list. Removing the last item is trickier, because we have
+to find the next-to-last item, change its next link to null, and then update the link that
+maintains the last node. In the classic linked list, where each node stores a link to its next
+node, having a link to the last node provides no information about the next-to-last node.
+The obvious idea of maintaining a third link to the next-to-last node doesn’t work,
+because it too would need to be updated during a remove. Instead, we have every node
+maintain a link to its previous node in the list. This is shown in Figure 3.4 and is known
+as a doubly linked list.
+first
+last
+a
+b
+c
+d
+Figure 3.4 A doubly linked list
+3.3
+Lists in the Java Collections API
+61
+3.3 Lists in the Java Collections API
+The Java language includes, in its library, an implementation of common data structures.
+This part of the language is popularly known as the Collections API. The List ADT is one
+of the data structures implemented in the Collections API. We will see some others in
+Chapters 4 and 5.
+3.3.1 Collection Interface
+The Collections API resides in package java.util. The notion of a collection, which stores
+a collection of identically typed objects, is abstracted in the Collection interface. Figure 3.5
+shows the most important parts of this interface (some methods are not shown).
+Many of the methods in the Collection interface do the obvious things that their names
+suggest. So size returns the number of items in the collection; isEmpty returns true if and
+only if the size of the collection is zero. contains returns true if x is in the collection. Note
+that the interface doesn’t specify how the collection decides if x is in the collection—this is
+determined by the actual classes that implement the Collection interface. add and remove
+add and remove item x from the collection, returning true if the operation succeeds and
+false if it fails for a plausible (nonexceptional) reason. For instance, a remove can fail if
+the item is not present in the collection, and if the particular collection does not allow
+duplicates, then add can fail when an attempt is made to insert a duplicate.
+The Collection interface extends the Iterable interface. Classes that implement the
+Iterable interface can have the enhanced for loop used on them to view all their items.
+For instance, the routine in Figure 3.6 can be used to print all the items in any collection.
+The implementation of this version of print is identical, character-for-character, with a
+corresponding implementation that could be used if coll had type AnyType[].
+3.3.2 Iterator s
+Collections that implement the Iterable interface must provide a method named iterator
+that returns an object of type Iterator. The Iterator is an interface defined in package
+java.util and is shown in Figure 3.7.
+1
+public interface Collection<AnyType> extends Iterable<AnyType>
+2
+{
+3
+int size( );
+4
+boolean isEmpty( );
+5
+void clear( );
+6
+boolean contains( AnyType x );
+7
+boolean add( AnyType x );
+8
+boolean remove( AnyType x );
+9
+java.util.Iterator<AnyType> iterator( );
+10
+}
+Figure 3.5 Subset of the Collection interface in package java.util
+62
+Chapter 3
+Lists, Stacks, and Queues
+1
+public static <AnyType> void print( Collection<AnyType> coll )
+2
+{
+3
+for( AnyType item : coll )
+4
+System.out.println( item );
+5
+}
+Figure 3.6 Using the enhanced for loop on an Iterable type
+1
+public interface Iterator<AnyType>
+2
+{
+3
+boolean hasNext( );
+4
+AnyType next( );
+5
+void remove( );
+6
+}
+Figure 3.7 The Iterator interface in package java.util
+The idea of the Iterator is that via the iterator method, each collection can create, and
+return to the client, an object that implements the Iterator interface and stores internally
+its notion of a current position.
+Each call to next gives the next item in the collection (that has not yet been seen). Thus
+the first call to next gives the first item, the second call gives the second item, and so forth.
+hasNext can be used to tell you if there is a next item. When the compiler sees an enhanced
+for loop being used on an object that is Iterable, it mechanically replaces the enhanced
+for loop with calls to the iterator method to obtain an Iterator and then calls to next and
+hasNext. Thus the previously seen print routine is rewritten by the compiler as shown in
+Figure 3.8.
+Because of the limited set of methods available in the Iterator interface, it is hard to
+use the Iterator for anything more than a simple traversal through the Collection. The
+Iterator interface also contains a method called remove. With this method you can remove
+the last item returned by next (after which you cannot call remove again until after another
+1
+public static <AnyType> void print( Collection<AnyType> coll )
+2
+{
+3
+Iterator<AnyType> itr = coll.iterator( );
+4
+while( itr.hasNext( ) )
+5
+{
+6
+AnyType item = itr.next( );
+7
+System.out.println( item );
+8
+}
+9
+}
+Figure 3.8 The enhanced for loop on an Iterable type rewritten by the compiler to use
+an iterator
+3.3
+Lists in the Java Collections API
+63
+call to next). Although the Collection interface also contains a remove method, there are
+presumably advantages to using the Iterator’s remove method instead.
+The main advantage of the Iterator’s remove method is that the Collection’s remove
+method must first find the item to remove. Presumably it is much less expensive to remove
+an item if you know exactly where it is. An example that we will see in the next section
+removes every other item in the collection. This code is easy to write with an iterator, and
+potentially more efficient than using the Collection’s remove method.
+When using the iterator directly (rather than indirectly via an enhanced for loop) it
+is important to keep in mind a fundamental rule: If you make a structural change to the
+collection being iterated (i.e., an add, remove, or clear method is applied on the collection),
+then the iterator is no longer valid (and a ConcurrentModificationException is thrown on
+subsequent attempts to use the iterator). This is necessary to avoid ugly situations in which
+the iterator is prepared to give a certain item as the next item, and then that item is either
+removed, or perhaps a new item is inserted just prior to the next item. This means that you
+shouldn’t obtain an iterator until immediately prior to the need to use it. However, if the
+iterator invokes its remove method, then the iterator is still valid. This is a second reason to
+prefer the iterator’s remove method sometimes.
+3.3.3 The List Interface, ArrayList, and LinkedList
+The collection that concerns us the most in this section is the list, which is specified by the
+List interface in package java.util. The List interface extends Collection, so it contains
+all the methods in the Collection interface, plus a few others. Figure 3.9 illustrates the
+most important of these methods.
+get and set allow the client to access or change an item at the specified position in the
+list, given by its index, idx. Index 0 is the front of the list, index size()-1 represents the last
+item in the list, and index size() represents the position where a newly added item can be
+placed. add allows the placement of a new item in position idx (pushing subsequent items
+one position higher). Thus, an add at position 0 is adding at the front, whereas an add at
+position size() is adding an item as the new last item. In addition to the standard remove
+that takes AnyType as a parameter, remove is overloaded to remove an item at a specified
+position. Finally, the List interface specifies the listIterator method that produces a more
+1
+public interface List<AnyType> extends Collection<AnyType>
+2
+{
+3
+AnyType get( int idx );
+4
+AnyType set( int idx, AnyType newVal );
+5
+void add( int idx, AnyType x );
+6
+void remove( int idx );
+7
+8
+ListIterator<AnyType> listIterator( int pos );
+9
+}
+Figure 3.9 Subset of the List interface in package java.util
+64
+Chapter 3
+Lists, Stacks, and Queues
+complicated iterator than normally expected. The ListIterator interface is discussed in
+Section 3.3.5.
+There are two popular implementations of the List ADT. The ArrayList provides a growable array implementation of the List ADT. The advantage of using the ArrayList is that
+calls to get and set take constant time. The disadvantage is that insertion of new items
+and removal of existing items is expensive, unless the changes are made at the end of the
+ArrayList. The LinkedList provides a doubly linked list implementation of the List ADT. The
+advantage of using the LinkedList is that insertion of new items and removal of existing
+items is cheap, provided that the position of the changes is known. This means that adds
+and removes from the front of the list are constant-time operations, so much so that the
+LinkedList provides methods addFirst and removeFirst, addLast and removeLast, and getFirst and getLast to efficiently add, remove, and access the items at both ends of the list.
+The disadvantage is that the LinkedList is not easily indexable, so calls to get are expensive
+unless they are very close to one of the ends of the list (if the call to get is for an item near
+the back of the list, the search can proceed from the back of the list). To see the differences,
+we look at some methods that operate on a List. First, suppose we construct a List by
+adding items at the end.
+public static void makeList1( List<Integer> lst, int N )
+{
+lst.clear( );
+for( int i = 0; i < N; i++ )
+lst.add( i );
+}
+Regardless of whether an ArrayList or LinkedList is passed as a parameter, the running
+time of makeList1 is O(N) because each call to add, being at the end of the list, takes constant
+time (the occasional expansion of the ArrayList is safe to ignore). On the other hand, if we
+construct a List by adding items at the front,
+public static void makeList2( List<Integer> lst, int N )
+{
+lst.clear( );
+for( int i = 0; i < N; i++ )
+lst.add( 0, i );
+}
+the running time is O(N) for a LinkedList, but O(N2) for an ArrayList, because in an
+ArrayList, adding at the front is an O(N) operation.
+The next routine attempts to compute the sum of the numbers in a List:
+public static int sum( List<Integer> lst )
+{
+int total = 0;
+for( int i = 0; i < N; i++ )
+total += lst.get( i );
+return total;
+}
+3.3
+Lists in the Java Collections API
+65
+Here, the running time is O(N) for an ArrayList, but O(N2) for a LinkedList, because in
+a LinkedList, calls to get are O(N) operations. Instead, use an enhanced for loop, which
+will make the running time O(N) for any List, because the iterator will efficiently advance
+from one item to the next.
+Both ArrayList and LinkedList are inefficient for searches, so calls to the Collection
+contains and remove methods (that take an AnyType as parameter) take linear time.
+In an ArrayList, there is a notion of a capacity, which represents the size of the underlying array. The ArrayList automatically increases the capacity as needed to ensure that it
+is at least as large as the size of the list. If an early estimate of the size is available, ensureCapacity can set the capacity to a sufficiently large amount to avoid a later expansion of the
+array capacity. Also, trimToSize can be used after all ArrayList adds are completed to avoid
+wasted space.
+3.3.4 Example: Using remove on a LinkedList
+As an example, we provide a routine that removes all even-valued items in a list. Thus, if
+the list contains 6, 5, 1, 4, 2, then after the method is invoked it will contain 5, 1.
+There are several possible ideas for an algorithm that deletes items from the list as
+they are encountered. Of course, one idea is to construct a new list containing all the odd
+numbers, and then clear the original list and copy the odd numbers back into it. But we are
+more interested in writing a clean version that avoids making a copy and instead removes
+items from the list as they are encountered.
+This is almost certainly a losing strategy for an ArrayList, since removing from almost
+anywhere in an ArrayList is expensive. In a LinkedList, there is some hope, as we know
+that removing from a known position can be done efficiently by rearranging some links.
+Figure 3.10 shows the first attempt. On an ArrayList, as expected, the remove is not
+efficient, so the routine takes quadratic time. A LinkedList exposes two problems. First,
+the call to get is not efficient, so the routine takes quadratic time. Additionally, the call to
+remove is equally inefficient, because it is expensive to get to position i.
+Figure 3.11 shows one attempt to rectify the problem. Instead of using get, we use an
+iterator to step through the list. This is efficient. But then we use the Collection’s remove
+1
+public static void removeEvensVer1( List<Integer> lst )
+2
+{
+3
+int i = 0;
+4
+while( i < lst.size( ) )
+5
+if( lst.get( i ) % 2 == 0 )
+6
+lst.remove( i );
+7
+else
+8
+i++;
+9
+}
+Figure 3.10 Removes the even numbers in a list; quadratic on all types of lists
+66
+Chapter 3
+Lists, Stacks, and Queues
+1
+public static void removeEvensVer2( List<Integer> lst )
+2
+{
+3
+for( Integer x : lst )
+4
+if( x % 2 == 0 )
+5
+lst.remove( x );
+6
+}
+Figure 3.11 Removes the even numbers in a list; doesn’t work because of
+ConcurrentModificationException
+1
+public static void removeEvensVer3( List<Integer> lst )
+2
+{
+3
+Iterator<Integer> itr = lst.iterator( );
+4
+5
+while( itr.hasNext( ) )
+6
+if( itr.next( ) % 2 == 0 )
+7
+itr.remove( );
+8
+}
+Figure 3.12 Removes the even numbers in a list; quadratic on ArrayList, but linear time
+for LinkedList
+method to remove an even-valued item. This is not an efficient operation because the
+remove method has to search for the item again, which takes linear time. But if we run the
+code, we find out that the situation is even worse: The program generates an exception
+because when an item is removed, the underlying iterator used by the enhanced for loop
+is invalidated. (The code in Figure 3.10 explains why: we cannot expect the enhanced for
+loop to understand that it must advance only if an item is not removed.)
+Figure 3.12 shows an idea that works: After the iterator finds an even-valued item,
+we can use the iterator to remove the value it has just seen. For a LinkedList, the call to
+the iterator’s remove method is only constant time, because the iterator is at (or near) the
+node that needs to be removed. Thus, for a LinkedList, the entire routine takes linear time,
+rather than quadratic time. For an ArrayList, even though the iterator is at the point that
+needs to be removed, the remove is still expensive, because array items must be shifted, so
+as expected, the entire routine still takes quadratic time for an ArrayList.
+If we run the code in Figure 3.12, passing a LinkedList<Integer>, it takes 0.039 seconds
+for an 800,000-item list, and 0.073 seconds for a 1,600,000 item LinkedList, and is
+clearly a linear-time routine, because the running time increases by the same factor as the
+input size. When we pass an ArrayList<Integer>, the routine takes almost five minutes
+for an 800,000-item ArrayList, and about twenty minutes for a 1,600,000-item ArrayList;
+the fourfold increase in running time when the input increases by only a factor of two is
+consistent with quadratic behavior.
+3.4
+Implementation of ArrayList
+67
+1
+public interface ListIterator<AnyType> extends Iterator<AnyType>
+2
+{
+3
+boolean hasPrevious( );
+4
+AnyType previous( );
+5
+6
+void add( AnyType x );
+7
+void set( AnyType newVal );
+8
+}
+Figure 3.13 Subset of the ListIterator interface in package java.util
+5
+8
+6
+9
+14
+5
+8
+6
+9
+14
+5
+8
+6
+9
+14
+(a)
+(b)
+(c)
+Figure 3.14 (a) Normal starting point: next returns 5, previous is illegal, add places item
+before 5; (b) next returns 8, previous returns 5, add places item between 5 and 8; (c) next
+is illegal, previous returns 9, add places item after 9
+3.3.5 ListIterators
+Figure 3.13 shows that a ListIterator extends the functionality of an Iterator for Lists.
+previous and hasPrevious allow traversal of the list from the back to the front. add places
+a new item into the list in the current position. The notion of the current position is
+abstracted by viewing the iterator as being between the item that would be given by a
+call to next and the item that would be given by a call to previous, an abstraction that is
+illustrated in Figure 3.14. add is a constant-time operation for a LinkedList but is expensive
+for an ArrayList. set changes the last value seen by the iterator and is convenient for
+LinkedLists. As an example, it can be used to subtract 1 from all the even numbers in
+a List, which would be hard to do on a LinkedList without using the ListIterator’s set
+method.
+3.4 Implementation of ArrayList
+In this section, we provide the implementation of a usable ArrayList generic class. To avoid
+ambiguities with the library class, we will name our class MyArrayList. We do not provide
+a MyCollection or MyList interface; rather, MyArrayList is standalone. Before examining the
+(nearly one hundred lines of) MyArrayList code, we outline the main details.
+1. The MyArrayList will maintain the underlying array, the array capacity, and the current
+number of items stored in the MyArrayList.
+68
+Chapter 3
+Lists, Stacks, and Queues
+2. The MyArrayList will provide a mechanism to change the capacity of the underlying
+array. The capacity is changed by obtaining a new array, copying the old array into the
+new array, and allowing the Virtual Machine to reclaim the old array.
+3. The MyArrayList will provide an implementation of get and set.
+4. The MyArrayList will provide basic routines, such as size, isEmpty, and clear, which are
+typically one-liners; a version of remove; and also two versions of add. The add routines
+will increase capacity if the size and capacity are the same.
+5. The MyArrayList will provide a class that implements the Iterator interface. This class
+will store the index of the next item in the iteration sequence and provide implementations of next, hasNext, and remove. The MyArrayList’s iterator method simply returns
+a newly constructed instance of the class that implements the Iterator interface.
+3.4.1 The Basic Class
+Figure 3.15 and Figure 3.16 show the MyArrayList class. Like its Collections API counterpart, there is some error checking to ensure valid bounds; however, in order to concentrate
+on the basics of writing the iterator class, we do not check for a structural modification that
+could invalidate an iterator, nor do we check for an illegal iterator remove. These checks are
+shown in the subsequent implementation of MyLinkedList in Section 3.5 and are exactly
+the same for both list implementations.
+As shown on lines 5–6, the MyArrayList stores the size and array as its data members.
+A host of short routines, namely clear, doClear (used to avoid having the constructor
+invoke an overridable method), size, trimToSize, isEmpty, get, and set, are implemented
+in lines 11 to 38.
+The ensureCapacity routine is shown at lines 40 to 49. Expanding capacity is done with
+the same logic outlined earlier: saving a reference to the original array at line 45, allocation
+of a new array at line 46, and copying of the old contents at lines 47 to 48. As shown
+at lines 42 to 43, the ensureCapacity routine can also be used to shrink the underlying
+array, but only if the specified new capacity is at least as large as the size. If it isn’t, the
+ensureCapacity request is ignored. At line 46, we see an idiom that is required because
+generic array creation is illegal. Instead, we create an array of the generic type’s bound and
+then use an array cast. This will generate a compiler warning but is unavoidable in the
+implementation of generic collections.
+Two versions of add are shown. The first adds at the end of the list and is trivially
+implemented by calling the more general version that adds at the specified position. That
+version is computationally expensive because it requires shifting elements that are at or
+after the specified position an additional position higher. add may require increasing capacity. Expanding capacity is very expensive, so if the capacity is expanded, it is made twice
+as large as the size to avoid having to change the capacity again unless the size increases
+dramatically (the +1 is used in case the size is 0).
+The remove method is similar to add, in that elements that are at or after the specified
+position must be shifted to one position lower.
+The remaining routine deals with the iterator method and the implementation of the
+associated iterator class. In Figure 3.16, this is shown at lines 77 to 96. The iterator
+1
+public class MyArrayList<AnyType> implements Iterable<AnyType>
+2
+{
+3
+private static final int DEFAULT_CAPACITY = 10;
+4
+5
+private int theSize;
+6
+private AnyType [ ] theItems;
+7
+8
+public MyArrayList( )
+9
+{ doClear( ); }
+10
+11
+public void clear( )
+12
+{ doClear( ); }
+13
+14
+private void doClear( )
+15
+{ theSize = 0; ensureCapacity( DEFAULT_CAPACITY ); }
+16
+17
+public int size( )
+18
+{ return theSize; }
+19
+public boolean isEmpty( )
+20
+{ return size( ) == 0; }
+21
+public void trimToSize( )
+22
+{ ensureCapacity( size( ) ); }
+23
+24
+public AnyType get( int idx )
+25
+{
+26
+if( idx < 0 || idx >= size( ) )
+27
+throw new ArrayIndexOutOfBoundsException( );
+28
+return theItems[ idx ];
+29
+}
+30
+31
+public AnyType set( int idx, AnyType newVal )
+32
+{
+33
+if( idx < 0 || idx >= size( ) )
+34
+throw new ArrayIndexOutOfBoundsException( );
+35
+AnyType old = theItems[ idx ];
+36
+theItems[ idx ] = newVal;
+37
+return old;
+38
+}
+39
+40
+public void ensureCapacity( int newCapacity )
+41
+{
+42
+if( newCapacity < theSize )
+43
+return;
+44
+45
+AnyType [ ] old = theItems;
+46
+theItems = (AnyType []) new Object[ newCapacity ];
+47
+for( int i = 0; i < size( ); i++ )
+48
+theItems[ i ] = old[ i ];
+49
+}
+Figure 3.15
+MyArrayList class (Part 1 of 2)
+50
+public boolean add( AnyType x )
+51
+{
+52
+add( size( ), x );
+53
+return true;
+54
+}
+55
+56
+public void add( int idx, AnyType x )
+57
+{
+58
+if( theItems.length == size( ) )
+59
+ensureCapacity( size( ) * 2 + 1 );
+60
+for( int i = theSize; i > idx; i-- )
+61
+theItems[ i ] = theItems[ i - 1 ];
+62
+theItems[ idx ] = x;
+63
+64
+theSize++;
+65
+}
+66
+67
+public AnyType remove( int idx )
+68
+{
+69
+AnyType removedItem = theItems[ idx ];
+70
+for( int i = idx; i < size( ) - 1; i++ )
+71
+theItems[ i ] = theItems[ i + 1 ];
+72
+73
+theSize--;
+74
+return removedItem;
+75
+}
+76
+77
+public java.util.Iterator<AnyType> iterator( )
+78
+{ return new ArrayListIterator( ); }
+79
+80
+private class ArrayListIterator implements java.util.Iterator<AnyType>
+81
+{
+82
+private int current = 0;
+83
+84
+public boolean hasNext( )
+85
+{ return current < size( ); }
+86
+87
+public AnyType next( )
+88
+{
+89
+if( !hasNext( ) )
+90
+throw new java.util.NoSuchElementException( );
+91
+return theItems[ current++ ];
+92
+}
+93
+94
+public void remove( )
+95
+{ MyArrayList.this.remove( --current ); }
+96
+}
+97
+}
+Figure 3.16
+MyArrayList class (Part 2 of 2)
+3.4
+Implementation of ArrayList
+71
+method simply returns an instance of ArrayListIterator, which is a class that implements
+the Iterator interface. The ArrayListIterator stores the notion of a current position, and
+provides implementations of hasNext, next, and remove. The current position represents the
+(array index of the) next element that is to be viewed, so initially the current position is 0.
+3.4.2 The Iterator and Java Nested and Inner Classes
+The ArrayListIterator class uses a tricky Java construct known as the inner class. Clearly
+the class is declared inside of the MyArrayList class, a feature that is supported by many
+languages. However, an inner class in Java has a more subtle property.
+To see how an inner class works, Figure 3.17 sketches the iterator idea (however, the
+code is flawed), making ArrayListIterator a top-level class. We focus only on the data
+fields of MyArrayList, the iterator method in MyArrayList, and the ArrayListIterator (but
+not its remove method).
+In Figure 3.17, ArrayListIterator is generic, it stores a current position, and the code
+attempts to use the current position in next to index the array and then advance. Note that
+if arr is an array, arr[idx++] uses idx to the array, and then advances idx. The positioning
+of the ++ matters. The form we used is called the postfix ++ operator, in which the ++ is
+after idx. But in the prefix ++ operator, arr[++idx] advances idx and then uses the new
+idx to index the array. The problem with Figure 3.17 is that theItems[current++] is illegal,
+because theItems is not part of the ArrayListIterator class; it is part of the MyArrayList.
+Thus the code doesn’t make sense at all.
+1
+public class MyArrayList<AnyType> implements Iterable<AnyType>
+2
+{
+3
+private int theSize;
+4
+private AnyType [ ] theItems;
+5
+...
+6
+public java.util.Iterator<AnyType> iterator( )
+7
+{ return new ArrayListIterator<AnyType>( ); }
+8
+}
+9
+class ArrayListIterator<AnyType> implements java.util.Iterator<AnyType>
+10
+{
+11
+private int current = 0;
+12
+...
+13
+public boolean hasNext( )
+14
+{ return current < size( ); }
+15
+public AnyType next( )
+16
+{ return theItems[ current++ ]; }
+17
+}
+Figure 3.17 Iterator Version #1 (doesn’t work): The iterator is a top-level class and stores
+the current position. It doesn’t work because theItems and size() are not part of the
+ArrayListIterator class
+72
+Chapter 3
+Lists, Stacks, and Queues
+1
+public class MyArrayList<AnyType> implements Iterable<AnyType>
+2
+{
+3
+private int theSize;
+4
+private AnyType [ ] theItems;
+5
+...
+6
+public java.util.Iterator<AnyType> iterator( )
+7
+{ return new ArrayListIterator<AnyType>( this ); }
+8
+}
+9
+class ArrayListIterator<AnyType> implements java.util.Iterator<AnyType>
+10
+{
+11
+private int current = 0;
+12
+private MyArrayList<AnyType> theList;
+13
+...
+14
+public ArrayListIterator( MyArrayList<AnyType> list )
+15
+{ theList = list; }
+16
+17
+public boolean hasNext( )
+18
+{ return current < theList.size( ); }
+19
+public AnyType next( )
+20
+{ return theList.theItems[ current++ ]; }
+21
+}
+Figure 3.18 Iterator Version #2 (almost works): The iterator is a top-level class and stores
+the current position and a link to the MyArrayList. It doesn’t work because theItems is
+private in the MyArrayList class
+The simplest solution is shown in Figure 3.18, which is unfortunately also flawed, but
+in a more minor way. In Figure 3.18, we solve the problem of not having the array in the
+iterator by having the iterator store a reference to the MyArrayList that it is iterating over.
+This reference is a second data field and is initialized by a new one-parameter constructor
+for ArrayListIterator. Now that we have a reference to MyArrayList, we can access the
+array field that is contained in MyArrayList (and also get the size of the MyArrayList, which
+is needed in hasNext).
+The flaw in Figure 3.18 is that theItems is a private field in MyArrayList, and since
+ArrayListIterator is a different class, it is illegal to access theItems in the next method.
+The simplest fix would be to change the visibility of theItems in MyArrayList from private
+to something less restrictive (such as public, or the default which is known as package
+visibility). But this violates basic principles of good object-oriented programming, which
+requires data to be as hidden as possible.
+Instead, Figure 3.19 shows a solution that works: Make the ArrayListIterator class
+a nested class. When we make ArrayListIterator a nested class, it is placed inside of
+another class (in this case MyArrayList) which is the outer class. We must use the word
+static to signify that it is nested; without static we will get an inner class, which is sometimes good and sometimes bad. The nested class is the type of class that is typical of many
+programming languages. Observe that the nested class can be made private, which is nice
+3.4
+Implementation of ArrayList
+73
+1
+public class MyArrayList<AnyType> implements Iterable<AnyType>
+2
+{
+3
+private int theSize;
+4
+private AnyType [ ] theItems;
+5
+...
+6
+public java.util.Iterator<AnyType> iterator( )
+7
+{ return new ArrayListIterator<AnyType>( this ); }
+8
+9
+private static class ArrayListIterator<AnyType>
+10
+implements java.util.Iterator<AnyType>
+11
+{
+12
+private int current = 0;
+13
+private MyArrayList<AnyType> theList;
+14
+...
+15
+public ArrayListIterator( MyArrayList<AnyType> list )
+16
+{ theList = list; }
+17
+18
+public boolean hasNext( )
+19
+{ return current < theList.size( ); }
+20
+public AnyType next( )
+21
+{ return theList.theItems[ current++ ]; }
+22
+}
+23
+}
+Figure 3.19 Iterator Version #3 (works): The iterator is a nested class and stores the
+current position and a link to the MyArrayList. It works because the nested class is
+considered part of the MyArrayList class
+because then it is inaccessible except by the outer class MyArrayList. More importantly,
+because the nested class is considered to be part of the outer class, there are no visibility
+issues that arise: theItems is a visible member of class MyArrayList, because next is part of
+MyArrayList.
+Now that we have a nested class, we can discuss the inner class. The problem with
+the nested class is that in our original design, when we wrote theItems without referring
+to MyArrayList that it was contained in, the code looked nice, and kind of made sense,
+but was illegal because it was impossible for the compiler to deduce which MyArrayList
+was being referred to. It would be nice not to have to keep track of this ourselves. This is
+exactly what an inner class does for you.
+When you declare an inner class, the compiler adds an implicit reference to the
+outer class object that caused the inner class object’s construction. If the name of the
+outer class is Outer, then the implicit reference is Outer.this. Thus if ArrayListIterator
+is declared as an inner class, without the static, then MyArrayList.this and theList would
+both be referencing the same MyArrayList. Thus theList would be redundant and could be
+removed.
+74
+Chapter 3
+Lists, Stacks, and Queues
+lst
+itr1
+items: 3, 5, 2
+theSize: 3
+MyArrayList.this
+current = 3
+MyArrayList.this
+current = 0
+itr2
+Figure 3.20
+Iterator/container with inner classes
+The inner class is useful in a situation in which each inner class object is associated
+with exactly one instance of an outer class object. In such a case, the inner class object can
+never exist without having an outer class object with which to be associated. In the case
+of the MyArrayList and its iterator, Figure 3.20 shows the relationship between the iterator
+class and MyArrayList class, when inner classes are used to implement the iterator.
+The use of theList.theItems could be replaced with MyArrayList.this.theItems. This
+is hardly an improvement, but a further simplification is possible. Just as this.data can
+be written simply as data (provided there is no other variable named data that could
+clash), MyArrayList.this.theItems can be written simply as theItems. Figure 3.21 shows
+the simplification of the ArrayListIterator.
+1
+public class MyArrayList<AnyType> implements Iterable<AnyType>
+2
+{
+3
+private int theSize;
+4
+private AnyType [ ] theItems;
+5
+...
+6
+public java.util.Iterator<AnyType> iterator( )
+7
+{ return new ArrayListIterator( ); }
+8
+9
+private class ArrayListIterator implements java.util.Iterator<AnyType>
+10
+{
+11
+private int current = 0;
+12
+13
+public boolean hasNext( )
+14
+{ return current < size( ); }
+15
+public AnyType next( )
+16
+{ return theItems[ current++ ]; }
+17
+public void remove( )
+18
+{ MyArrayList.this.remove( --current ); }
+19
+}
+20
+}
+Figure 3.21
+Iterator Version #4 (works): The iterator is an inner class and stores the
+current position and an implicit link to the MyArrayList
+3.5
+Implementation of LinkedList
+75
+First, the ArrayListIterator is implicitly generic, since it is now tied to MyArrayList,
+which is generic; we don’t have to say so.
+Second, theList is gone, and we use size() and theItems[current++] as shorthands for
+MyArrayList.this.size() and MyArrayList.this.theItems[current++]. The removal of theList as a data member also removes the associated constructor, so the code reverts back to
+the style in Version #1.
+We can implement the iterator’s remove by calling MyArrayList’s remove. Since
+MyArrayList’s remove would conflict with ArrayListIterator’s remove, we have to use
+MyArrayList.this.remove. Note that after the item is removed, elements shift, so for current
+to be viewing the same element, it must also shift. Hence the use of --, rather than -1.
+Inner classes are a syntactical convenience for Java programmers. They are not needed
+to write any Java code, but their presence in the language allows the Java programmer to
+write code in the style that was natural (like Version #1), with the compiler writing the
+extra code required to associate the inner class object with the outer class object.
+3.5 Implementation of LinkedList
+In this section, we provide the implementation of a usable LinkedList generic class. As
+in the case of the ArrayList class, our list class will be named MyLinkedList to avoid
+ambiguities with the library class.
+Recall that the LinkedList class will be implemented as a doubly linked list, and that
+we will need to maintain references to both ends of the list. Doing so allows us to maintain
+constant time cost per operation, so long as the operation occurs at a known position. The
+known position can be either end, or at a position specified by an iterator (however, we do
+not implement a ListIterator, thus leaving some code for the reader).
+In considering the design, we will need to provide three classes:
+1. The MyLinkedList class itself, which contains links to both ends, the size of the list, and
+a host of methods.
+2. The Node class, which is likely to be a private nested class. A node contains the data
+and links to the previous and next nodes, along with appropriate constructors.
+3. The LinkedListIterator class, which abstracts the notion of a position and is a private
+inner class, implementing the Iterator interface. It provides implementations of next,
+hasNext, and remove.
+Because the iterator classes store a reference to the “current node,” and the end marker
+is a valid position, it makes sense to create an extra node at the end of the list to represent
+the end marker. Further, we can create an extra node at the front of the list, logically
+representing the beginning marker. These extra nodes are sometimes known as sentinel
+nodes; specifically, the node at the front is sometimes known as a header node, and the
+node at the end is sometimes known as a tail node.
+76
+Chapter 3
+Lists, Stacks, and Queues
+head
+tail
+a
+b
+Figure 3.22
+A doubly linked list with header and tail nodes
+head
+tail
+Figure 3.23
+An empty doubly linked list with header and tail nodes
+The advantage of using these extra nodes is that they greatly simplify the coding by
+removing a host of special cases. For instance, if we do not use a header node, then removing the first node becomes a special case, because we must reset the list’s link to the first
+node during the remove, and also because the remove algorithm in general needs to access
+the node prior to the node being removed (and without a header node, the first node
+does not have a node prior to it). Figure 3.22 shows a doubly linked list with header and
+tail nodes. Figure 3.23 shows an empty list. Figure 3.24 shows the outline and partial
+implementation of the MyLinkedList class.
+We can see at line 3 the beginning of the declaration of the private nested Node class.
+Figure 3.25 shows the Node class, consisting of the stored item, links to the previous and
+next Node, and a constructor. All the data members are public. Recall that in a class, the
+data members are normally private. However, members in a nested class are visible even in
+the outer class. Since the Node class is private, the visibility of the data members in the Node
+class is irrelevant; the MyLinkedList methods can see all Node data members, and classes
+outside of MyLinkedList cannot see the Node class at all.
+Back in Figure 3.24, lines 46 to 49 contain the data members for MyLinkedList, namely
+the reference to the header and tail nodes. We also keep track of the size in a data member, so that the size method can be implemented in constant time. At line 47, we have
+one additional data field that is used to help the iterator detect changes in the collection.
+modCount represents the number of changes to the linked list since construction. Each call
+to add or remove will update modCount. The idea is that when an iterator is created, it will
+store the modCount of the collection. Each call to an iterator method (next or remove) will
+check the stored modCount in the iterator with the current modCount in the linked list and
+will throw a ConcurrentModificationException if these two counts don’t match.
+The rest of the MyLinkedList class consists of the constructor, the implementation of
+the iterator, and a host of methods. Many of the methods are one-liners.
+1
+public class MyLinkedList<AnyType> implements Iterable<AnyType>
+2
+{
+3
+private static class Node<AnyType>
+4
+{ /* Figure 3.25 */ }
+5
+6
+public MyLinkedList( )
+7
+{ doClear( ); }
+8
+9
+public void clear( )
+10
+{ /* Figure 3.26 */ }
+11
+public int size( )
+12
+{ return theSize; }
+13
+public boolean isEmpty( )
+14
+{ return size( ) == 0; }
+15
+16
+public boolean add( AnyType x )
+17
+{ add( size( ), x );
+return true; }
+18
+public void add( int idx, AnyType x )
+19
+{ addBefore( getNode( idx, 0, size( ) ), x ); }
+20
+public AnyType get( int idx )
+21
+{ return getNode( idx ).data; }
+22
+public AnyType set( int idx, AnyType newVal )
+23
+{
+24
+Node<AnyType> p = getNode( idx );
+25
+AnyType oldVal = p.data;
+26
+p.data = newVal;
+27
+return oldVal;
+28
+}
+29
+public AnyType remove( int idx )
+30
+{ return remove( getNode( idx ) ); }
+31
+32
+private void addBefore( Node<AnyType> p, AnyType x )
+33
+{ /* Figure 3.28 */ }
+34
+private AnyType remove( Node<AnyType> p )
+35
+{ /* Figure 3.30 */ }
+36
+private Node<AnyType> getNode( int idx )
+37
+{ /* Figure 3.31 */ }
+38
+private Node<AnyType> getNode( int idx, int lower, int upper )
+39
+{ /* Figure 3.31 */ }
+40
+41
+public java.util.Iterator<AnyType> iterator( )
+42
+{ return new LinkedListIterator( ); }
+43
+private class LinkedListIterator implements java.util.Iterator<AnyType>
+44
+{ /* Figure 3.32 */ }
+45
+46
+private int theSize;
+47
+private int modCount = 0;
+48
+private Node<AnyType> beginMarker;
+49
+private Node<AnyType> endMarker;
+50
+}
+Figure 3.24
+MyLinkedList class
+78
+Chapter 3
+Lists, Stacks, and Queues
+1
+private static class Node<AnyType>
+2
+{
+3
+public Node( AnyType d, Node<AnyType> p, Node<AnyType> n )
+4
+{ data = d; prev = p; next = n; }
+5
+6
+public AnyType data;
+7
+public Node<AnyType>
+prev;
+8
+public Node<AnyType>
+next;
+9
+}
+Figure 3.25
+Nested Node class for MyLinkedList class
+1
+public void clear( )
+2
+{ doClear( ); }
+3
+4
+private void doClear( )
+5
+{
+6
+beginMarker = new Node<AnyType>( null, null, null );
+7
+endMarker = new Node<AnyType>( null, beginMarker, null );
+8
+beginMarker.next = endMarker;
+9
+10
+theSize = 0;
+11
+modCount++;
+12
+}
+Figure 3.26
+clear routine for MyLinkedList class, which invokes private doClear
+The doClear method in Figure 3.26 is invoked by the constructor. It creates and
+connects the header and tail nodes and then sets the size to 0.
+In Figure 3.24, at line 43 we see the beginning of the declaration of the private inner LinkedListIterator class. We’ll discuss those details when we see the actual
+implementations later.
+Figure 3.27 illustrates how a new node containing x is spliced in between a node
+referenced by p and p.prev. The assignment to the node links can be described as follows:
+Node newNode = new Node( x, p.prev, p );
+// Steps 1 and 2
+p.prev.next = newNode;
+// Step 3
+p.prev = newNode;
+// Step 4
+Steps 3 and 4 can be combined, yielding only two lines:
+Node newNode = new Node( x, p.prev, p );
+// Steps 1 and 2
+p.prev = p.prev.next = newNode;
+// Steps 3 and 4
+But then these two lines can also be combined, yielding:
+p.prev = p.prev.next = new Node( x, p.prev, p );
+3.5
+Implementation of LinkedList
+79
+prev
+x
+3
+1
+2
+4
+p
+...
+...
+Figure 3.27 Insertion in a doubly linked list by getting new node and then changing
+pointers in the order indicated
+This makes the addBefore routine in Figure 3.28 short.
+Figure 3.29 shows the logic of removing a node. If p references the node being
+removed, only two links change before the node is disconnected and eligible to be
+reclaimed by the Virtual Machine:
+p.prev.next = p.next;
+p.next.prev = p.prev;
+1
+/**
+2
+* Adds an item to this collection, at specified position p.
+3
+* Items at or after that position are slid one position higher.
+4
+* @param p Node to add before.
+5
+* @param x any object.
+6
+* @throws IndexOutOfBoundsException if idx is not between 0 and size(),.
+7
+*/
+8
+private void addBefore( Node<AnyType> p, AnyType x )
+9
+{
+10
+Node<AnyType> newNode = new Node<>( x, p.prev, p );
+11
+newNode.prev.next = newNode;
+12
+p.prev = newNode;
+13
+theSize++;
+14
+modCount++;
+15
+}
+Figure 3.28
+add routine for MyLinkedList class
+p
+. . .
+. . .
+Figure 3.29 Removing node specified by p from a doubly linked list
+80
+Chapter 3
+Lists, Stacks, and Queues
+1
+/**
+2
+* Removes the object contained in Node p.
+3
+* @param p the Node containing the object.
+4
+* @return the item was removed from the collection.
+5
+*/
+6
+private AnyType remove( Node<AnyType> p )
+7
+{
+8
+p.next.prev = p.prev;
+9
+p.prev.next = p.next;
+10
+theSize--;
+11
+modCount++;
+12
+13
+return p.data;
+14
+}
+Figure 3.30
+remove routine for MyLinkedList class
+Figure 3.30 shows the basic private remove routine that contains the two lines of code
+shown above.
+Figure 3.31 has the previously mentioned private getNode methods. If the index represents a node in the first half of the list, then at lines 29 to 34 we step through the linked
+list, in the forward direction. Otherwise, we go backward, starting at the end, as shown in
+lines 37 to 39.
+The LinkedListIterator, shown in Figure 3.32, has logic that is similar to the
+ArrayListIterator but incorporates significant error checking. The iterator maintains a current position, shown at line 3. current represents the node containing the item that is to
+be returned by a call to next. Observe that when current is positioned at the endMarker, a
+call to next is illegal.
+In order to detect a situation in which the collection has been modified during the
+iteration, at line 4 the iterator stores in the data field expectedModCount the modCount of the
+linked list at the time the iterator is constructed. At line 5, the Boolean data field okToRemove
+is true if a next has been performed, without a subsequent remove. Thus okToRemove is
+initially false, set to true in next, and set to false in remove.
+hasNext is fairly routine. As in java.util.LinkedList’s iterator, it does not check for
+modification of the linked list.
+The next method advances current (line 18) after getting the value in the node (line
+17) that is to be returned (line 20). okToRemove is updated at line 19.
+Finally, the iterator’s remove method is shown at lines 23 to 33. It is mostly error checking (which is why we avoided the error checks in the ArrayListIterator). The actual remove
+at line 30 mimics the logic in the ArrayListIterator. But here, current remains unchanged,
+because the node that current is viewing is unaffected by the removal of the prior node (in
+the ArrayListIterator, items shifted, requiring an update of current).
+3.5
+Implementation of LinkedList
+81
+1
+/**
+2
+* Gets the Node at position idx, which must range from 0 to size( ) - 1.
+3
+* @param idx index to search at.
+4
+* @return internal node corresponding to idx.
+5
+* @throws IndexOutOfBoundsException if idx is not
+6
+*
+between 0 and size( ) - 1, inclusive.
+7
+*/
+8
+private Node<AnyType> getNode( int idx )
+9
+{
+10
+return getNode( idx, 0, size( ) - 1 );
+11
+}
+12
+13
+/**
+14
+* Gets the Node at position idx, which must range from lower to upper.
+15
+* @param idx index to search at.
+16
+* @param lower lowest valid index.
+17
+* @param upper highest valid index.
+18
+* @return internal node corresponding to idx.
+19
+* @throws IndexOutOfBoundsException if idx is not
+20
+*
+between lower and upper, inclusive.
+21
+*/
+22
+private Node<AnyType> getNode( int idx, int lower, int upper )
+23
+{
+24
+Node<AnyType> p;
+25
+26
+if( idx < lower || idx > upper )
+27
+throw new IndexOutOfBoundsException( );
+28
+29
+if( idx < size( ) / 2 )
+30
+{
+31
+p = beginMarker.next;
+32
+for( int i = 0; i < idx; i++ )
+33
+p = p.next;
+34
+}
+35
+else
+36
+{
+37
+p = endMarker;
+38
+for( int i = size( ); i > idx; i-- )
+39
+p = p.prev;
+40
+}
+41
+42
+return p;
+43
+}
+Figure 3.31 Private getNode routine for MyLinkedList class
+82
+Chapter 3
+Lists, Stacks, and Queues
+1
+private class LinkedListIterator implements java.util.Iterator<AnyType>
+2
+{
+3
+private Node<AnyType> current = beginMarker.next;
+4
+private int expectedModCount = modCount;
+5
+private boolean okToRemove = false;
+6
+7
+public boolean hasNext( )
+8
+{ return current != endMarker; }
+9
+10
+public AnyType next( )
+11
+{
+12
+if( modCount != expectedModCount )
+13
+throw new java.util.ConcurrentModificationException( );
+14
+if( !hasNext( ) )
+15
+throw new java.util.NoSuchElementException( );
+16
+17
+AnyType nextItem = current.data;
+18
+current = current.next;
+19
+okToRemove = true;
+20
+return nextItem;
+21
+}
+22
+23
+public void remove( )
+24
+{
+25
+if( modCount != expectedModCount )
+26
+throw new java.util.ConcurrentModificationException( );
+27
+if( !okToRemove )
+28
+throw new IllegalStateException( );
+29
+30
+MyLinkedList.false.remove( current.prev );
+31
+expectedModCount++;
+32
+okToRemove = false;
+33
+}
+34
+}
+Figure 3.32
+Inner Iterator class for MyList class
+3.6 The Stack ADT
+3.6.1 Stack Model
+A stack is a list with the restriction that insertions and deletions can be performed in only
+one position, namely, the end of the list, called the top. The fundamental operations on a
+stack are push, which is equivalent to an insert, and pop, which deletes the most recently
+3.6
+The Stack ADT
+83
+push
+Stack
+pop
+top
+Figure 3.33 Stack model: input to a stack is by push, output is by pop and top
+6
+3
+1
+4
+2
+top
+Figure 3.34 Stack model: Only the top element is accessible
+inserted element. The most recently inserted element can be examined prior to performing
+a pop by use of the top routine. A pop or top on an empty stack is generally considered an
+error in the stack ADT. On the other hand, running out of space when performing a push is
+an implementation limit but not an ADT error.
+Stacks are sometimes known as LIFO (last in, first out) lists. The model depicted in
+Figure 3.33 signifies only that pushes are input operations and pops and tops are output.
+The usual operations to make empty stacks and test for emptiness are part of the repertoire,
+but essentially all that you can do to a stack is push and pop.
+Figure 3.34 shows an abstract stack after several operations. The general model is that
+there is some element that is at the top of the stack, and it is the only element that is visible.
+3.6.2 Implementation of Stacks
+Since a stack is a list, any list implementation will do. Clearly ArrayList and LinkedList support stack operations; 99% of the time they are the most reasonable choice. Occasionally
+it can be faster to design a special-purpose implementation (for instance, if the items being
+placed on the stack are a primitive type). Because stack operations are constant-time operations, this is unlikely to yield any discernable improvement except under very unique
+circumstances. For these special times, we will give two popular implementations. One
+84
+Chapter 3
+Lists, Stacks, and Queues
+uses a linked structure and the other uses an array, and both simplify the logic in ArrayList
+and LinkedList, so we do not provide code.
+Linked List Implementation of Stacks
+The first implementation of a stack uses a singly linked list. We perform a push by inserting
+at the front of the list. We perform a pop by deleting the element at the front of the list.
+A top operation merely examines the element at the front of the list, returning its value.
+Sometimes the pop and top operations are combined into one.
+Array Implementation of Stacks
+An alternative implementation avoids links and is probably the more popular solution.
+Mimicking the ArrayList add operation, the implementation is trivial. Associated with each
+stack is theArray and topOfStack, which is −1 for an empty stack (this is how an empty
+stack is initialized). To push some element x onto the stack, we increment topOfStack and
+then set theArray[topOfStack] = x. To pop, we set the return value to theArray[topOfStack]
+and then decrement topOfStack.
+Notice that these operations are performed in not only constant time, but very fast constant time. On some machines, pushes and pops (of integers) can be written in one machine
+instruction, operating on a register with auto-increment and auto-decrement addressing.
+The fact that most modern machines have stack operations as part of the instruction
+set enforces the idea that the stack is probably the most fundamental data structure in
+computer science, after the array.
+3.6.3 Applications
+It should come as no surprise that if we restrict the operations allowed on a list, those operations can be performed very quickly. The big surprise, however, is that the small number
+of operations left are so powerful and important. We give three of the many applications
+of stacks. The third application gives a deep insight into how programs are organized.
+Balancing Symbols
+Compilers check your programs for syntax errors, but frequently a lack of one symbol
+(such as a missing brace or comment starter) will cause the compiler to spill out a hundred
+lines of diagnostics without identifying the real error. (Fortunately, most Java compilers are
+pretty good about this. But not all languages and compilers are as responsible.)
+A useful tool in this situation is a program that checks whether everything is balanced.
+Thus, every right brace, bracket, and parenthesis must correspond to its left counterpart.
+The sequence [()] is legal, but [(]) is wrong. Obviously, it is not worthwhile writing a
+huge program for this, but it turns out that it is easy to check these things. For simplicity,
+we will just check for balancing of parentheses, brackets, and braces and ignore any other
+character that appears.
+The simple algorithm uses a stack and is as follows:
+Make an empty stack. Read characters until end of file. If the character is an opening
+symbol, push it onto the stack. If it is a closing symbol, then if the stack is empty report
+3.6
+The Stack ADT
+85
+an error. Otherwise, pop the stack. If the symbol popped is not the corresponding
+opening symbol, then report an error. At end of file, if the stack is not empty report an
+error.
+You should be able to convince yourself that this algorithm works. It is clearly linear
+and actually makes only one pass through the input. It is thus online and quite fast. Extra
+work can be done to attempt to decide what to do when an error is reported—such as
+identifying the likely cause.
+Postfix Expressions
+Suppose we have a pocket calculator and would like to compute the cost of a shopping
+trip. To do so, we add a list of numbers and multiply the result by 1.06; this computes the
+purchase price of some items with local sales tax added. If the items are 4.99, 5.99, and
+6.99, then a natural way to enter this would be the sequence
+4.99 + 5.99 + 6.99 ∗1.06 =
+Depending on the calculator, this produces either the intended answer, 19.05, or the scientific answer, 18.39. Most simple four-function calculators will give the first answer, but
+many advanced calculators know that multiplication has higher precedence than addition.
+On the other hand, some items are taxable and some are not, so if only the first and
+last items were actually taxable, then the sequence
+4.99 ∗1.06 + 5.99 + 6.99 ∗1.06 =
+would give the correct answer (18.69) on a scientific calculator and the wrong answer
+(19.37) on a simple calculator. A scientific calculator generally comes with parentheses, so
+we can always get the right answer by parenthesizing, but with a simple calculator we need
+to remember intermediate results.
+A typical evaluation sequence for this example might be to multiply 4.99 and 1.06,
+saving this answer as A1. We then add 5.99 and A1, saving the result in A1. We multiply
+6.99 and 1.06, saving the answer in A2, and finish by adding A1 and A2, leaving the final
+answer in A1. We can write this sequence of operations as follows:
+4.99 1.06 ∗5.99 + 6.99 1.06 ∗+
+This notation is known as postfix or reverse Polish notation and is evaluated exactly as
+we have described above. The easiest way to do this is to use a stack. When a number is
+seen, it is pushed onto the stack; when an operator is seen, the operator is applied to the
+two numbers (symbols) that are popped from the stack, and the result is pushed onto the
+stack. For instance, the postfix expression
+6 5 2 3 + 8 ∗+ 3 + ∗
+is evaluated as follows: The first four symbols are placed on the stack. The resulting
+stack is
+86
+Chapter 3
+Lists, Stacks, and Queues
+3
+2
+5
+6
+topOfStack
+→
+Next a ‘+’ is read, so 3 and 2 are popped from the stack and their sum, 5, is pushed.
+5
+5
+6
+topOfStack
+→
+Next 8 is pushed.
+5
+5
+8
+6
+topOfStack
+→
+Now a ‘∗’ is seen, so 8 and 5 are popped and 5 ∗8 = 40 is pushed.
+40
+5
+6
+topOfStack
+→
+Next a ‘+’ is seen, so 40 and 5 are popped and 5 + 40 = 45 is pushed.
+45
+6
+topOfStack
+→
+3.6
+The Stack ADT
+87
+Now, 3 is pushed.
+45
+6
+3
+topOfStack
+→
+Next ‘+’ pops 3 and 45 and pushes 45 + 3 = 48.
+48
+6
+topOfStack
+→
+Finally, a ‘∗’ is seen and 48 and 6 are popped; the result, 6 ∗48 = 288, is pushed.
+288
+topOfStack
+→
+The time to evaluate a postfix expression is O(N), because processing each element in
+the input consists of stack operations and thus takes constant time. The algorithm to do
+so is very simple. Notice that when an expression is given in postfix notation, there is no
+need to know any precedence rules; this is an obvious advantage.
+Infix to Postfix Conversion
+Not only can a stack be used to evaluate a postfix expression, but we can also use a stack
+to convert an expression in standard form (otherwise known as infix) into postfix. We
+will concentrate on a small version of the general problem by allowing only the operators
++, *, (, ), and insisting on the usual precedence rules. We will further assume that the
+expression is legal. Suppose we want to convert the infix expression
+a + b * c + ( d * e + f ) * g
+into postfix. A correct answer is a b c * + d e * f + g * +.
+When an operand is read, it is immediately placed onto the output. Operators are not
+immediately output, so they must be saved somewhere. The correct thing to do is to place
+operators that have been seen, but not placed on the output, onto the stack. We will also
+stack left parentheses when they are encountered. We start with an initially empty stack.
+88
+Chapter 3
+Lists, Stacks, and Queues
+If we see a right parenthesis, then we pop the stack, writing symbols until we encounter
+a (corresponding) left parenthesis, which is popped but not output.
+If we see any other symbol (+, *, (), then we pop entries from the stack until we find
+an entry of lower priority. One exception is that we never remove a ( from the stack except
+when processing a ). For the purposes of this operation, + has lowest priority and ( highest.
+When the popping is done, we push the operator onto the stack.
+Finally, if we read the end of input, we pop the stack until it is empty, writing symbols
+onto the output.
+The idea of this algorithm is that when an operator is seen, it is placed on the stack.
+The stack represents pending operators. However, some of the operators on the stack that
+have high precedence are now known to be completed and should be popped, as they will
+no longer be pending. Thus prior to placing the operator on the stack, operators that are
+on the stack and are to be completed prior to the current operator, are popped. This is
+illustrated in the following table:
+Stack When Third
+Expression
+Operator Is Processed
+Action
+a*b-c+d
+-
+- is completed; + is pushed
+a/b+c*d
++
+Nothing is completed; * is pushed
+a-b*c/d
+- *
+* is completed; / is pushed
+a-b*c+d
+- *
+* and - are completed; + is pushed
+Parentheses simply add an additional complication. We can view a left parenthesis
+as a high-precedence operator when it is an input symbol (so that pending operators
+remain pending), and a low-precedence operator when it is on the stack (so that it is
+not accidentally removed by an operator). Right parentheses are treated as the special case.
+To see how this algorithm performs, we will convert the long infix expression above
+into its postfix form. First, the symbol a is read, so it is passed through to the output. Then
++ is read and pushed onto the stack. Next b is read and passed through to the output. The
+state of affairs at this juncture is as follows:
+a b
+Output
+Stack
++
+Next a * is read. The top entry on the operator stack has lower precedence than *, so
+nothing is output and * is put on the stack. Next, c is read and output. Thus far, we have
+a b c
+Output
+Stack
++
+*
+3.6
+The Stack ADT
+89
+The next symbol is a +. Checking the stack, we find that we will pop a * and place it on
+the output; pop the other +, which is not of lower but equal priority, on the stack; and then
+push the +.
+a b c * +
+Output
+Stack
++
+The next symbol read is a (, which, being of highest precedence, is placed on the stack.
+Then d is read and output.
+a b c * + d
+Output
+Stack
++
+(
+We continue by reading a *. Since open parentheses do not get removed except when a
+closed parenthesis is being processed, there is no output. Next, e is read and output.
+a b c * + d e
+Output
+Stack
++
+(
+*
+The next symbol read is a +. We pop and output * and then push +. Then we read and
+output f.
+a b c * + d e * f
+Output
+Stack
++
+(
++
+Now we read a ), so the stack is emptied back to the (. We output a +.
+a b c * + d e * f +
+Output
+Stack
++
+We read a * next; it is pushed onto the stack. Then g is read and output.
+90
+Chapter 3
+Lists, Stacks, and Queues
+a b c * + d e * f + g
+Output
+Stack
++
+*
+The input is now empty, so we pop and output symbols from the stack until it is empty.
+a b c * + d e * f + g * +
+Output
+Stack
+As before, this conversion requires only O(N) time and works in one pass through the
+input. We can add subtraction and division to this repertoire by assigning subtraction and
+addition equal priority and multiplication and division equal priority. A subtle point is that
+the expression a-b-c will be converted to ab-c- and not abc--. Our algorithm does the right
+thing, because these operators associate from left to right. This is not necessarily the case
+in general, since exponentiation associates right to left: 223 = 28 = 256, not 43 = 64. We
+leave as an exercise the problem of adding exponentiation to the repertoire of operators.
+Method Calls
+The algorithm to check balanced symbols suggests a way to implement method calls in
+compiled procedural and object-oriented languages.1 The problem here is that when a call
+is made to a new method, all the variables local to the calling routine need to be saved
+by the system, since otherwise the new method will overwrite the memory used by the
+calling routine’s variables. Furthermore, the current location in the routine must be saved
+so that the new method knows where to go after it is done. The variables have generally
+been assigned by the compiler to machine registers, and there are certain to be conflicts
+(usually all methods get some variables assigned to register #1), especially if recursion is
+involved. The reason that this problem is similar to balancing symbols is that a method call
+and method return are essentially the same as an open parenthesis and closed parenthesis,
+so the same ideas should work.
+When there is a method call, all the important information that needs to be saved, such
+as register values (corresponding to variable names) and the return address (which can be
+obtained from the program counter, which is typically in a register), is saved “on a piece
+of paper” in an abstract way and put at the top of a pile. Then the control is transferred
+to the new method, which is free to replace the registers with its values. If it makes other
+method calls, it follows the same procedure. When the method wants to return, it looks
+at the “paper” at the top of the pile and restores all the registers. It then makes the return
+jump.
+1 Since Java is interpreted, rather than compiled, some details in this section may not apply to Java, but the
+general concepts still do in Java and many other languages.
+3.6
+The Stack ADT
+91
+1
+/**
+2
+* Print container from itr.
+3
+*/
+4
+public static <AnyType> void printList( Iterator<AnyType> itr )
+5
+{
+6
+if( !itr.hasNext( ) )
+7
+return;
+8
+9
+System.out.println( itr.next( ) );
+10
+printList( itr );
+11
+}
+Figure 3.35 A bad use of recursion: printing a linked list
+Clearly, all of this work can be done using a stack, and that is exactly what happens in
+virtually every programming language that implements recursion. The information saved
+is called either an activation record or stack frame. Typically, a slight adjustment is made:
+The current environment is represented at the top of the stack. Thus, a return gives the
+previous environment (without copying). The stack in a real computer frequently grows
+from the high end of your memory partition downward, and on many non-Java systems
+there is no checking for overflow. There is always the possibility that you will run out of
+stack space by having too many simultaneously active methods. Needless to say, running
+out of stack space is always a fatal error.
+In languages and systems that do not check for stack overflow, programs crash without
+an explicit explanation. In Java, an exception is thrown.
+In normal events, you should not run out of stack space; doing so is usually an indication of runaway recursion (forgetting a base case). On the other hand, some perfectly legal
+and seemingly innocuous programs can cause you to run out of stack space. The routine in
+Figure 3.35, which prints out a collection, is perfectly legal and actually correct. It properly
+handles the base case of an empty collection, and the recursion is fine. This program can be
+proven correct. Unfortunately, if the collection contains 20,000 elements to print, there will
+be a stack of 20,000 activation records representing the nested calls of line 10. Activation
+records are typically large because of all the information they contain, so this program is
+likely to run out of stack space. (If 20,000 elements are not enough to make the program
+crash, replace the number with a larger one.)
+This program is an example of an extremely bad use of recursion known as tail
+recursion. Tail recursion refers to a recursive call at the last line. Tail recursion can be
+mechanically eliminated by enclosing the body in a while loop and replacing the recursive
+call with one assignment per method argument. This simulates the recursive call because
+nothing needs to be saved; after the recursive call finishes, there is really no need to know
+the saved values. Because of this, we can just go to the top of the method with the values that would have been used in a recursive call. The method in Figure 3.36 shows the
+mechanically improved version. Removal of tail recursion is so simple that some compilers
+do it automatically. Even so, it is best not to find out that yours does not.
+92
+Chapter 3
+Lists, Stacks, and Queues
+1
+/**
+2
+* Print container from itr.
+3
+*/
+4
+public static <AnyType> void printList( Iterator<AnyType> itr )
+5
+{
+6
+while( true )
+7
+{
+8
+if( !itr.hasNext( ) )
+9
+return;
+10
+11
+System.out.println( itr.next( ) );
+12
+}
+13
+}
+Figure 3.36
+Printing a list without recursion; a compiler might do this
+Recursion can always be completely removed (compilers do so in converting to assembly language), but doing so can be quite tedious. The general strategy requires using a
+stack and is worthwhile only if you can manage to put the bare minimum on the stack. We
+will not dwell on this further, except to point out that although nonrecursive programs are
+certainly generally faster than equivalent recursive programs, the speed advantage rarely
+justifies the lack of clarity that results from removing the recursion.
+3.7 The Queue ADT
+Like stacks, queues are lists. With a queue, however, insertion is done at one end, whereas
+deletion is performed at the other end.
+3.7.1 Queue Model
+The basic operations on a queue are enqueue, which inserts an element at the end of the list
+(called the rear), and dequeue, which deletes (and returns) the element at the start of the
+list (known as the front). Figure 3.37 shows the abstract model of a queue.
+3.7.2 Array Implementation of Queues
+As with stacks, any list implementation is legal for queues. Like stacks, both the linked list
+and array implementations give fast O(1) running times for every operation. The linked
+list implementation is straightforward and left as an exercise. We will now discuss an array
+implementation of queues.
+For each queue data structure, we keep an array, theArray, and the positions front and
+back, which represent the ends of the queue. We also keep track of the number of elements
+3.7
+The Queue ADT
+93
+ enqueue
+ Queue
+ dequeue
+Figure 3.37 Model of a queue
+that are actually in the queue, currentSize. The following figure shows a queue in some
+intermediate state.
+front
+back
+1
+5
+2
+7
+↑
+↑
+The operations should be clear. To enqueue an element x, we increment currentSize
+and back, then set theArray[back]=x. To dequeue an element, we set the return value to
+theArray[front], decrement currentSize, and then increment front. Other strategies are
+possible (this is discussed later). We will comment on checking for errors presently.
+There is one potential problem with this implementation. After 10 enqueues, the queue
+appears to be full, since back is now at the last array index, and the next enqueue would
+be in a nonexistent position. However, there might only be a few elements in the queue,
+because several elements may have already been dequeued. Queues, like stacks, frequently
+stay small even in the presence of a lot of operations.
+The simple solution is that whenever front or back gets to the end of the array, it is
+wrapped around to the beginning. The following figures show the queue during some
+operations. This is known as a circular array implementation.
+front
+back
+2
+4
+Initial State
+↑
+↑
+front
+back
+2
+1
+4
+After enqueue(1)
+↑
+↑
+94
+Chapter 3
+Lists, Stacks, and Queues
+front
+back
+2
+1
+3
+4
+After enqueue(3)
+↑
+↑
+front
+back
+2
+1
+3
+4
+After dequeue, Which Returns 2
+↑
+↑
+front back
+2
+1
+3
+4
+After dequeue, Which Returns 4
+↑
+↑
+back
+front
+2
+1
+3
+4
+After dequeue, Which Returns 1
+↑
+front
+back
+2
+1
+3
+4
+After dequeue, Which Returns 3
+and Makes the Queue Empty
+↑
+↑
+The extra code required to implement the wraparound is minimal (although it probably
+doubles the running time). If incrementing either back or front causes it to go past the array,
+the value is reset to the first position in the array.
+Some programmers use different ways of representing the front and back of a queue.
+For instance, some do not use an entry to keep track of the size, because they rely on the
+base case that when the queue is empty, back = front-1. The size is computed implicitly by comparing back and front. This is a very tricky way to go, because there are some
+special cases, so be very careful if you need to modify code written this way. If the currentSize is not maintained as an explicit data field, then the queue is full when there are
+theArray.length-1 elements, since only theArray.length different sizes can be differentiated, and one of these is 0. Pick any style you like and make sure that all your routines
+3.7
+The Queue ADT
+95
+are consistent. Since there are a few options for implementation, it is probably worth a
+comment or two in the code, if you don’t use the currentSize field.
+In applications where you are sure that the number of enqueues is not larger than the
+capacity of the queue, the wraparound is not necessary. As with stacks, dequeues are rarely
+performed unless the calling routines are certain that the queue is not empty. Thus error
+checks are frequently skipped for this operation, except in critical code. This is generally
+not justifiable, because the time savings that you are likely to achieve are minimal.
+3.7.3 Applications of Queues
+There are many algorithms that use queues to give efficient running times. Several of these
+are found in graph theory, and we will discuss them in Chapter 9. For now, we will give
+some simple examples of queue usage.
+When jobs are submitted to a printer, they are arranged in order of arrival. Thus,
+essentially, jobs sent to a line printer are placed on a queue.2
+Virtually every real-life line is (supposed to be) a queue. For instance, lines at ticket
+counters are queues, because service is first-come first-served.
+Another example concerns computer networks. There are many network setups of
+personal computers in which the disk is attached to one machine, known as the file server.
+Users on other machines are given access to files on a first-come first-served basis, so the
+data structure is a queue.
+Further examples include the following:
+r Calls to large companies are generally placed on a queue when all operators are busy.
+r In large universities, where resources are limited, students must sign a waiting list
+if all terminals are occupied. The student who has been at a terminal the longest is
+forced off first, and the student who has been waiting the longest is the next user to be
+allowed on.
+A whole branch of mathematics, known as queuing theory, deals with computing,
+probabilistically, how long users expect to wait on a line, how long the line gets, and other
+such questions. The answer depends on how frequently users arrive to the line and how
+long it takes to process a user once the user is served. Both of these parameters are given as
+probability distribution functions. In simple cases, an answer can be computed analytically.
+An example of an easy case would be a phone line with one operator. If the operator is busy,
+callers are placed on a waiting line (up to some maximum limit). This problem is important
+for businesses, because studies have shown that people are quick to hang up the phone.
+If there are k operators, then this problem is much more difficult to solve. Problems
+that are difficult to solve analytically are often solved by a simulation. In our case, we
+would need to use a queue to perform the simulation. If k is large, we also need other data
+structures to do this efficiently. We shall see how to do this simulation in Chapter 6. We
+2 We say essentially because jobs can be killed. This amounts to a deletion from the middle of the queue,
+which is a violation of the strict definition.
+96
+Chapter 3
+Lists, Stacks, and Queues
+could then run the simulation for several values of k and choose the minimum k that gives
+a reasonable waiting time.
+Additional uses for queues abound, and as with stacks, it is staggering that such a
+simple data structure can be so important.
+Summary
+This chapter describes the concept of ADTs and illustrates the concept with three of the
+most common abstract data types. The primary objective is to separate the implementation
+of the abstract data types from their function. The program must know what the operations
+do, but it is actually better off not knowing how it is done.
+Lists, stacks, and queues are perhaps the three fundamental data structures in all of
+computer science, and their use is documented through a host of examples. In particular,
+we saw how stacks are used to keep track of method calls and how recursion is actually
+implemented. This is important to understand, not just because it makes procedural languages possible, but because knowing how recursion is implemented removes a good deal
+of the mystery that surrounds its use. Although recursion is very powerful, it is not an
+entirely free operation; misuse and abuse of recursion can result in programs crashing.
+Exercises
+3.1
+You are given a list, L, and another list, P, containing integers sorted in ascending
+order. The operation printLots(L,P) will print the elements in L that are in positions
+specified by P. For instance, if P = 1, 3, 4, 6, the elements in positions 1, 3, 4, and 6
+in L are printed. Write the procedure printLots(L,P). You may use only the public
+Collections API container operations. What is the running time of your procedure?
+3.2
+Swap two adjacent elements by adjusting only the links (and not the data) using:
+a. Singly linked lists.
+b. Doubly linked lists.
+3.3
+Implement the contains routine for MyLinkedList.
+3.4
+Given two sorted lists, L1 and L2, write a procedure to compute L1 ∩L2 using only
+the basic list operations.
+3.5
+Given two sorted lists, L1 and L2, write a procedure to compute L1 ∪L2 using only
+the basic list operations.
+3.6
+The Josephus problem is the following game: N people, numbered 1 to N, are sitting
+in a circle. Starting at person 1, a hot potato is passed. After M passes, the person
+holding the hot potato is eliminated, the circle closes ranks, and the game continues
+with the person who was sitting after the eliminated person picking up the hot
+potato. The last remaining person wins. Thus, if M = 0 and N = 5, players are
+eliminated in order, and player 5 wins. If M = 1 and N = 5, the order of elimination
+is 2, 4, 1, 5.
+Exercises
+97
+a. Write a program to solve the Josephus problem for general values of M and N.
+Try to make your program as efficient as possible. Make sure you dispose of
+cells.
+b. What is the running time of your program?
+3.7
+What is the running time of the following code?
+public static List<Integer> makeList( int N )
+{
+ArrayList<Integer> lst = new ArrayList<>( );
+for( int i = 0; i < N; i++ )
+{
+lst.add( i );
+lst.trimToSize( );
+}
+}
+3.8
+The following routine removes the first half of the list passed as a parameter:
+public static void removeFirstHalf( List<?> lst )
+{
+int theSize = lst.size( ) / 2;
+for( int i = 0; i < theSize; i++ )
+lst.remove( 0 );
+}
+a. Why is theSize saved prior to entering the for loop?
+b. What is the running time of removeFirstHalf if lst is an ArrayList?
+c. What is the running time of removeFirstHalf if lst is a LinkedList?
+d. Does using an iterator make removeHalf faster for either type of List?
+3.9
+Provide an implementation of an addAll method for the MyArrayList class. Method
+addAll adds all items in the specified collection given by items to the end of the
+MyArrayList. Also provide the running time of your implementation. The method
+signature for you to use is slightly different than the one in the Java Collections API,
+and is as follows:
+public void addAll( Iterable<? extends AnyType> items )
+3.10
+Provide an implementation of a removeAll method for the MyLinkedList class.
+Method removeAll removes all items in the specified collection given by items
+from the MyLinkedList. Also provide the running time of your implementation.
+The method signature for you to use is slightly different than the one in the Java
+Collections API, and is as follows:
+public void removeAll( Iterable<? extends AnyType> items )
+98
+Chapter 3
+Lists, Stacks, and Queues
+3.11
+Assume that a singly linked list is implemented with a header node, but no tail
+node, and that it maintains only a reference to the header node. Write a class that
+includes methods to
+a. return the size of the linked list
+b. print the linked list
+c. test if a value x is contained in the linked list
+d. add a value x if it is not already contained in the linked list
+e. remove a value x if it is contained in the linked list
+3.12
+Repeat Exercise 3.11, maintaining the singly linked list in sorted order.
+3.13
+Add support for a ListIterator to the MyArrayList class. The ListIterator interface in java.util has more methods than are shown in Section 3.3.5. Notice that
+you will write a listIterator method to return a newly constructed ListIterator,
+and further, that the existing iterator method can return a newly constructed
+ListIterator. Thus you will change ArrayListIterator so that it implements
+ListIterator instead of Iterator. Throw an UnsupportedOperationException for
+methods not listed in Section 3.3.5.
+3.14
+Add support for a ListIterator to the MyLinkedList class, as was done in
+Exercise 3.13.
+3.15
+Add a splice operation to the LinkedList class. The method declaration
+public void splice(Iterator<T> itr, MyLinkedList<? extends T> lst )
+removes all the items from lst (making lst empty), placing them prior to itr in
+MyLinkedList this. lst and this must be different lists. Your routine must run in
+constant time.
+3.16
+An alternative to providing a ListIterator is to provide a method with signature
+Iterator<AnyType> reverseIterator( )
+that returns an Iterator, initialized to the last item, and for which next and hasNext
+are implemented to be consistent with the iterator advancing toward the front of
+the list, rather than the back. Then you could print a MyArrayList L in reverse by
+using the code
+Iterator<AnyType> ritr = L.reverseIterator( );
+while( ritr.hasNext( ) )
+System.out.println( ritr.next( ) );
+Implement an ArrayListReverseIterator class, with this logic, and have reverseIterator return a newly constructed ArrayListReverseIterator.
+3.17
+Modify the MyArrayList class to provide stringent iterator checking by using the
+techniques seen in Section 3.5 for MyLinkedList.
+3.18
+For MyLinkedList, implement addFirst, addLast, removeFirst, removeLast, getFirst,
+and getLast by making calls to the private add, remove, and getNode routines,
+respectively.
+Exercises
+99
+3.19
+Rewrite the MyLinkedList class without using header and tail nodes and describe
+the differences between the class and the class provided in Section 3.5.
+3.20
+An alternative to the deletion strategy we have given is to use lazy deletion. To
+delete an element, we merely mark it deleted (using an extra bit field). The number
+of deleted and nondeleted elements in the list is kept as part of the data structure. If
+there are as many deleted elements as nondeleted elements, we traverse the entire
+list, performing the standard deletion algorithm on all marked nodes.
+a. List the advantages and disadvantages of lazy deletion.
+b. Write routines to implement the standard linked list operations using lazy
+deletion.
+3.21
+Write a program to check for balancing symbols in the following languages:
+a. Pascal (begin/end, (), [], {}).
+b. Java (/* */, (), [], {} ).
+⋆c. Explain how to print out an error message that is likely to reflect the probable
+cause.
+3.22
+Write a program to evaluate a postfix expression.
+3.23
+a. Write a program to convert an infix expression that includes (, ), +, -, *, and /
+to postfix.
+b. Add the exponentiation operator to your repertoire.
+c. Write a program to convert a postfix expression to infix.
+3.24
+Write routines to implement two stacks using only one array. Your stack routines
+should not declare an overflow unless every slot in the array is used.
+3.25
+⋆a. Propose a data structure that supports the stack push and pop operations and a
+third operation findMin, which returns the smallest element in the data structure,
+all in O(1) worst-case time.
+⋆b. Prove that if we add the fourth operation deleteMin which finds and removes the
+smallest element, then at least one of the operations must take (log N) time.
+(This requires reading Chapter 7.)
+⋆3.26
+Show how to implement three stacks in one array.
+3.27
+If the recursive routine in Section 2.4 used to compute Fibonacci numbers is run
+for N = 50, is stack space likely to run out? Why or why not?
+3.28
+A deque is a data structure consisting of a list of items, on which the following
+operations are possible:
+push(x): Insert item x on the front end of the deque.
+pop(): Remove the front item from the deque and return it.
+inject(x): Insert item x on the rear end of the deque.
+eject(): Remove the rear item from the deque and return it.
+Write routines to support the deque that take O(1) time per operation.
+3.29
+Write an algorithm for printing a singly linked list in reverse, using only constant
+extra space. This instruction implies that you cannot use recursion, but you may
+assume that your algorithm is a list member function.
+100
+Chapter 3
+Lists, Stacks, and Queues
+3.30
+a. Write an array implementation of self-adjusting lists. In a self-adjusting list, all
+insertions are performed at the front. A self-adjusting list adds a find operation,
+and when an element is accessed by a find, it is moved to the front of the list
+without changing the relative order of the other items.
+b. Write a linked list implementation of self-adjusting lists.
+⋆c. Suppose each element has a fixed probability, pi, of being accessed. Show that
+the elements with highest access probability are expected to be close to the front.
+3.31
+Efficiently implement a stack class using a singly linked list, with no header or tail
+nodes.
+3.32
+Efficiently implement a queue class using a singly linked list, with no header or tail
+nodes.
+3.33
+Efficiently implement a queue class using a circular array.
+3.34
+A linked list contains a cycle if, starting from some node p, following a sufficient
+number of next links brings us back to node p. p does not have to be the first node
+in the list. Assume that you are given a linked list that contains N nodes. However,
+the value of N is unknown.
+a. Design an O(N) algorithm to determine if the list contains a cycle. You may use
+O(N) extra space.
+⋆b. Repeat part (a), but use only O(1) extra space. (Hint: Use two iterators that are
+initially at the start of the list, but advance at different speeds.)
+3.35
+One way to implement a queue is to use a circular linked list. In a circular linked
+list, the last node’s next link links to the first node. Assume the list does not contain
+a header and that we can maintain, at most, one iterator corresponding to a node in
+the list. For which of the following representations can all basic queue operations
+be performed in constant worst-case time? Justify your answers.
+a. Maintain an iterator that corresponds to the first item in the list.
+b. Maintain an iterator that corresponds to the last item in the list.
+3.36
+Suppose we have a reference to a node in a singly linked list that is guaranteed not
+to be the last node in the list. We do not have references to any other nodes (except
+by following links). Describe an O(1) algorithm that logically removes the value
+stored in such a node from the linked list, maintaining the integrity of the linked
+list. (Hint: Involve the next node.)
+3.37
+Suppose that a singly linked list is implemented with both a header and a tail node.
+Describe constant-time algorithms to
+a. Insert item x before position p (given by an iterator).
+b. Remove the item stored at position p (given by an iterator).

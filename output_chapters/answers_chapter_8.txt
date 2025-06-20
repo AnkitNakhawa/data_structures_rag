@@ -1,0 +1,116 @@
+CHAPTER 8 
+The Disjoint Set Class 
+8.1 
+We assume that unions operated on the roots of the trees containing the arguments. Also, in case of ties, the 
+second tree is made a child of the first. Arbitrary union and union by height give the same answer (shown as 
+the first tree) for this problem. Union by size gives the second tree. 
+ 
+8.2 
+In both cases, have nodes 16 and 0 point directly to the root. 
+8.4 
+Claim: A tree of height h has at least 2h nodes. The proof is by induction. A tree of height 0 clearly has at 
+least 1 node, and a tree of height 1 clearly has at least 2. Let T be the tree of height h with fewest nodes. Thus 
+at the time of T’s last union, it must have been a tree of height h − 1, since otherwise T would have been 
+smaller at that time than it is now and still would have been of height h, which is impossible by assumption 
+of T’s minimality. Since T’s height was updated, it must have been as a result of a union with another tree of 
+height h − 1. By the induction hypothesis, we know that at the time of the union, T had at least 2h−1 nodes, as 
+did the tree attached to it, for a total of 2h nodes, proving the claim. Thus an N-node tree has depth at most 
+log N
+
+
+
+. 
+8.5 
+We are given T(n) = n/f(n) * T(f(n)) + n 
+ 
+First, we expand T(f(n)) using the definition of T(n) itself: 
+T(f(n)) = f(n)/f(f(n)) * T(f(f(n))) + n 
+and then substitute this expression for T(f(n)) into the original formula to obtain 
+T(n) = n/f(n) * [ f(n)/f(f(n)) * T(f(f(n))) + n ] + n 
+= n/f(f(n)) * T(f(f(n)) + n2/f(n) + n 
+Next, we consider T(f(f(n)). We expand this term next: 
+T(f(f(n))) = f(f(n))/f(f(f(n))) * T(f(f(f(n)))) + n 
+and then substitute this expression for T(f(f(n))) into the most recent formula we have for T(n). 
+T(n) = n/f(f(n)) * [ f(f(n))/f(f(f(n))) * T(f(f(f(n)))) + n ] + n2/f(n) + n 
+= n/f(f(f(n))) * T(f(f(f(n))) + n2/f(f(n)) + n2/f(n) + n 
+And, next we expand T(f(f(f(n)))) using the definition of T. 
+T(f(f(f(n)))) = f(f(f(n)))/f(f(f(f(n)))) * T(f(f(f(f(n))))) + n 
+and let's substitute into the most recent formula for T. 
+T(n) = n/f(f(f(n))) * [ f(f(f(n)))/f(f(f(f(n)))) * T(f(f(f(f(n))))) + n] + n2/f(f(n)) + n2/f(n) + n 
+= n/f(f(f(f(n)))) * T(f(f(f(f(n))))) + n2/f(f(f(n))) + n2/f(f(n)) + n2/f(n) + n 
+= n/f(f(f(f(n)))) * T(f(f(f(f(n))))) + n2[1/f(f(f(n)))+1/f(f(n))+1/f(n)] + n 
+And in general, this can go on indefinitely, and we would obtain 
+T(n) = n/f k(n) * T(fk(n)) + n2[1/f k–1(n)+1/f k–2(n)+...+1/f(n)] + n 
+And eventually, fk(n) = 1, so our equation becomes T(n) = n * T(1) + n2[sum of small fractions] + n. 
+Let's assume the sum in brackets equals s. We obtain: T(n) = n * T(1) + s*n2 + n. 
+We need to assume an initial condition for T(1). Let us assume it is c. Now we have T(n) = cn + s*n2 + n = 
+s*n2 + (c+1)n. In other words, T(n) is a polynomial of degree 2, or T(n) = O(n2). 
+8.6 
+All answers are O(M) because in all cases alpha(M N) = 1. 
+8.8 
+It is easy to see that this invariant is maintained in each disjoint set as the algorithm proceeds. 
+8.9 
+Run the normal algorithm; never remove the prespecified wall. Let s1 and s2 be squares on the opposite side 
+of the wall. Do not remove any wall that results in s1 being connected to the ending point or s2 being 
+connected to the starting point, and continue until there are only two disjoint sets remaining. 
+8.10 
+(a) When we perform a union we push onto a stack the two roots and the old values of their parents. To 
+implement a deunion, we only have to pop the stack and restore the values. This strategy works fine in the 
+absence of path compression. 
+ 
+(b) If path compression is implemented, the strategy described in part (a) does not work, because path 
+compression moves elements out of subtrees. For instance, the sequence union(1, 2), union(3, 4), union(1, 3), 
+find(4), deunion(1, 3) will leave 4 in set 1 if path compression is implemented. 
+8.11 
+We assume that the tree is implemented with links instead of a simple array. Thus find will return a reference 
+instead of an actual set name. We will keep an array to map set numbers to their tree nodes. union and find 
+are implemented in the standard manner. To perform remove(x), first perform a find(x) with path 
+compression. Then mark the node containing x as vacant. Create a new one-node tree with x and have it 
+pointed to by the appropriate array entry. The time to perform a remove is the same as the time to perform a 
+find, except that there potentially could be a large number of vacant nodes. To take care of this, after N 
+removes are performed, perform a find on every node, with path compression. If a find(x) returns a vacant 
+root, then place x in the root node, and make the old node containing x vacant. The results of Exercise 8.11 
+guarantee that this will take linear time, which can be charged to the N removes. At this point, all vacant 
+nodes (indeed all nonroot nodes) are children of a root, and vacant nodes can be disposed (if an array of 
+references to them has been kept). This also guarantees that there are never more than 2N nodes in the forest 
+and preserves the M (M, N) asymptotic time bound. 
+8.12 
+Suppose there are u union and f find operations. Each union costs constant time, for a total of u. A find costs 
+one unit per vertex visited. We charge, as in the text, under the following slightly modified rules: 
+ 
+(A) the vertex is a root or child of the root 
+ 
+(B) otherwise 
+Essentially, all vertices are in one rank group. During any find, there can be at most two rule (A) charges, 
+for a total of 2f. Each vertex can be charged at most once under rule (B) because after path compression it 
+will be a child of the root. The number of vertices that are not roots or children of roots is clearly bounded by 
+u, independent of the unioning strategy, because each union changes exactly one vertex from root to nonroot 
+status, and this bounds the number of type (B) nodes. Thus the total rule (B) charges are at most u. Adding all 
+charges gives a bound of 2f + 2u, which is linear in the number of operations. 
+8.14 
+For each vertex v, let the pseudorank Rv be defined as log
+v
+S
+
+
+
+, where Sv is the number of descendents 
+(including itself) of v in the final tree, after all union operations are performed, ignoring path compression. 
+Although the pseudorank is not maintained by the algorithm, it is not hard to show that the pseudorank 
+satisfies the same properties as the ranks do in union-by-rank. Clearly, a vertex with pseudorank Rv has at 
+least 2
+v
+R descendents (by its definition), and the number of vertices of pseudorank R is at most N/2R. The 
+union-by-size rule ensures that the parent of a node has twice as many descendents as the node, so the 
+pseudoranks monotonically increase on the path toward the root if there is no path compression. The 
+argument in Lemma 8.3 tells us that path compression does not destroy this property. 
+If we partition the vertices by pseudoranks and assign the charges in the same manner as in the text proof 
+for union-by-rank, the same steps follow, and the identical bound is obtained. 
+8.16 
+This is most conveniently implemented without recursion and is faster because, even if full path compression 
+is implemented nonrecursively, it requires two passes up the tree. This requires only one. We leave the 
+coding to the reader since comparing the various union and find strategies is a reasonable programming 
+project. The worst-case running time remains the same because the properties of the ranks are unchanged. 
+Instead of charging one unit to each vertex on the path to the root, we can charge two units to alternating 
+vertices (namely, the vertices whose parents are altered by path halving). These vertices get parents of higher 
+rank, as before, and the same kind of analysis bounds the total charges.

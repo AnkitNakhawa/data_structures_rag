@@ -1,0 +1,763 @@
+CHAPTER 5 
+Hashing 
+5.1 
+(a) On the assumption that we add collisions to the end of the list (which is the easier way if a hash table is 
+being built by hand), the separate chaining hash table that results is shown here. 
+ 
+ 
+(b) 
+ 
+ 
+(c) 
+ 
+ 
+(d) 1989 cannot be inserted into the table because hash2(1989) = 6, and the alternative locations 5, 1, 7, and 3 
+are already taken. The table at this point is as follows: 
+ 
+5.2 
+When rehashing, we choose a table size that is roughly twice as large and prime. In our case, the appropriate 
+new table size is 19, with hash function h(x) = x(mod 19). 
+ 
+(a) Scanning down the separate chaining hash table, the new locations are 4371 in list 1, 1323 in list 12, 6173 
+in list 17, 4344 in list 12, 4199 in list 0, 9679 in list 8, and 1989 in list 13. 
+ 
+(b) The new locations are 9679 in bucket 8, 4371 in bucket 1, 1989 in bucket 13, 1323 in bucket 12, 6173 in 
+bucket 17, 4344 in bucket 14 (because both 12 and 13 are already occupied), and 4199 in bucket 0. 
+ 
+(c) The new locations are 9679 in bucket 8, 4371 in bucket 1, 1989 in bucket 13, 1323 in bucket 12, 6173 in 
+bucket 17, 4344 in bucket 16 (because both 12 and 13 are already occupied), and 4199 in bucket 0. 
+ 
+(d) The new locations are 9679 in bucket 8, 4371 in bucket 1, 1989 in bucket 13, 1323 in bucket 12, 6173 in 
+bucket 17, 4344 in bucket 15 because 12 is already occupied, and 4199 in bucket 0. 
+5.4 
+We must be careful not to rehash too often. Let p be the threshold (fraction of table size) at which we rehash 
+to a smaller table. Then if the new table has size N, it contains 2pN elements. This table will require 
+rehashing after either 2N − 2pN insertions or pN deletions. Balancing these costs suggests that a good choice 
+is p = 2/3. For instance, suppose we have a table of size 300. If we rehash at 200 elements, then the new table 
+size is N = 150, and we can do either 100 insertions or 100 deletions until a new rehash is required. 
+If we know that insertions are more frequent than deletions, then we might choose p to be somewhat 
+larger. If p is too close to 1.0, however, then a sequence of a small number of deletions followed by insertions 
+can cause frequent rehashing. In the worst case, if p = 1.0, then alternating deletions and insertions both 
+require rehashing. 
+5.5 
+Here is a Java implementation of a singly linked list to support chaining. It consists of two source files, 
+LinkedList.java and Node.java. The rest of the hash table implementation would not need to be changed. 
+/** LinkedList.java - a singly linked list implementation 
+ * to support separate chaining hash tables. 
+ * The intent here is not to implement all methods in the Java API 
+ * List interface - just the ones needed to support the separate 
+ * chaining implementation given in section 5.3 in the text. 
+ * We need the following: 
+ * default constructor 
+ * clear() 
+ * contains() 
+ * add() 
+ * remove() 
+ */ 
+public class LinkedList<T> 
+{ 
+ private Node head; 
+ 
+ public LinkedList() 
+ { 
+ head = null; 
+ } 
+ 
+ public void clear() 
+ { 
+ head = null; 
+ } 
+ 
+ /** contains: We assume type T has an appropriate equals method. 
+ */ 
+ public boolean contains(T value) 
+ { 
+ boolean found = false; 
+ for (Node curr = head; curr != null; curr = curr.next) 
+ if (curr.data.equals(value)) 
+ return true; 
+ 
+ return false; 
+ } 
+ 
+ public void add(T value) 
+ { 
+ Node n = new Node(value); 
+ 
+ // Special case of first node in list 
+ if (head == null) 
+ { 
+ head = n; 
+ head.next = null; 
+ } 
+ 
+ else 
+ { 
+ // Go to the end of the list 
+ Node curr = null; 
+ for (curr = head; curr != null && curr.next != null; curr = curr.next) 
+ ; 
+ 
+ // At this point, curr is the last node in the list before adding. 
+ curr.next = n; 
+ n.next = null; 
+ } 
+ } 
+ 
+ /** remove: If the value to be removed does not exist in the list, 
+ * then do nothing. 
+ * We assume that type T has an appropriate equals() method. 
+ */ 
+ public void remove(T value) 
+ { 
+ if (this.contains(value)) 
+ { 
+ // Special case of removing the first node in the list. 
+ if (head.data.equals(value)) 
+ { 
+ head = head.next; 
+ } 
+ else 
+ { 
+ // At this point we know the value to remove is in the list, 
+ // but not at the head of the list. 
+ Node victimPred = null; 
+ for (Node curr = head; curr != null && curr.next != null; curr = 
+curr.next) 
+ { 
+ if (curr.next.data.equals(value)) 
+ { 
+ victimPred = curr; 
+ break; 
+ } 
+ } 
+ 
+ // Now, remove the victim node. 
+ // The node victimPred is the node preceeding the victim. 
+ victimPred.next = victimPred.next.next; 
+ } 
+ } 
+ } 
+ 
+ /** print: a means to print the list contents 
+ */ 
+ public void print() 
+ { 
+ for (Node curr = head; curr != null; curr = curr.next) 
+ System.out.printf("%s\t", curr.data.toString()); 
+ System.out.printf("\n"); 
+ } 
+} 
+ 
+/** Node.java 
+ */ 
+public class Node<T> 
+{ 
+ protected T data; 
+ protected Node next; 
+ 
+ public Node(T value) 
+ { 
+ data = value; 
+ } 
+} 
+ 
+5.6 
+No; this does not take deletions into account. 
+5.7 
+(b) If the number of deleted cells is small, then we spend extra time looking for inactive cells that are not 
+likely to be found. If the number of deleted cells is large, then we may get improvement. 
+5.8 
+Cubic probing encounters slightly fewer collisions than quadratic probing, as seen in the following 
+simulation. 
+// Let's simulate linear, quadratic, and cubic probimg. 
+// Is cubic probing any better than quadratic? 
+// In this simulation, cells equal to 0 represent empty, and cells 
+// equal to 1 contain some key value. 
+import java.util.Random; 
+ 
+public class Simulation 
+{ 
+ public static final int SIZE = 10000019; // prime number 
+ public static final int MAX = 9000000; 
+ 
+ public static void main(String [] args) 
+ { 
+ int [] linear = new int [SIZE]; 
+ int [] quadratic = new int [SIZE]; 
+ int [] cubic = new int [SIZE]; 
+ 
+ int linearCollisions = 0; 
+ int quadraticCollisions = 0; 
+ int cubicCollisions = 0; 
+ 
+ // We are going to generate random indices to occupy in the hash tables. 
+ Random gen = new Random(); 
+ 
+ for (int i = 0; i < MAX; ++i) 
+ { 
+ int hashCode = gen.nextInt(SIZE); 
+ int offset = 0; 
+ while (linear[hashCode] == 1) 
+ { 
+ ++linearCollisions; 
+ ++offset; 
+ hashCode += offset; 
+ if (hashCode >= SIZE) 
+ hashCode %= SIZE; 
+ } 
+ linear[hashCode] = 1; 
+ } 
+ 
+ for (int i = 0; i < MAX; ++i) 
+ { 
+ int hashCode = gen.nextInt(SIZE); 
+ int offset = 0; 
+ while (quadratic[hashCode] == 1) 
+ { 
+ ++quadraticCollisions; 
+ ++offset; 
+ hashCode += offset * offset; 
+ if (hashCode >= SIZE) 
+ hashCode %= SIZE; 
+ } 
+ quadratic[hashCode] = 1; 
+ } 
+ 
+ for (int i = 0; i < MAX; ++i) 
+ { 
+ int hashCode = gen.nextInt(SIZE); 
+ int offset = 0; 
+ while (cubic[hashCode] == 1) 
+ { 
+ ++cubicCollisions; 
+ ++offset; 
+ hashCode += offset * offset * offset; 
+ if (hashCode >= SIZE) 
+ hashCode %= SIZE; 
+ } 
+ cubic[hashCode] = 1; 
+ } 
+ 
+ System.out.printf("Here is the number of collisions for each type of 
+probing.\n"); 
+ System.out.printf("linear = %d\n", linearCollisions); 
+ System.out.printf("quadratic = %d\n", quadraticCollisions); 
+ System.out.printf("cubic = %d\n", cubicCollisions); 
+ } 
+} 
+ 
+/* Here are the results of an example run. When trying to insert 9 million 
+ * elements, here is the number of collisions encountered: 
+ * linear = 16,896,111 
+ * quadratic = 15,544,826 
+ * cubic = 15,436,598 
+ * So, we can conclude that the cubic probing performs slightly better under 
+ * these conditions (large hash table, lambda up to 0.9) 
+ */ 
+ 
+5.9 
+In a good library implementation, the length method should be inlined. 
+5.10 
+Separate chaining hashing requires the use of links, which costs some memory, and the standard method of 
+implementing calls on memory allocation routines, which typically are expensive. Linear probing is easily 
+implemented, but performance degrades severely as the load factor increases because of primary clustering. 
+Quadratic probing is only slightly more difficult to implement and gives good performance in practice. An 
+insertion can fail if the table is half empty, but this is not likely. Even if it were, such an insertion would be so 
+expensive that it wouldn’t matter and would almost certainly point up a weakness in the hash function. 
+Double hashing eliminates primary and secondary clustering, but the computation of a second hash function 
+can be costly. Gonnet and Baeza-Yates [8] compare several hashing strategies; their results suggest that 
+quadratic probing is the fastest method. 
+5.12 
+The old values would remain valid if the hashed values were less than the old table size. 
+5.13 
+Sorting the MN records and eliminating duplicates would require O(MN log MN) time using a standard 
+sorting algorithm. If terms are merged by using a hash function, then the merging time is constant per term 
+for a total of O(MN). If the output polynomial is small and has only O(M + N) terms, then it is easy to sort it 
+in O((M + N) log (M + N)) time, which is less than O(MN). Thus the total is O(MN). This bound is better 
+because the model is less restrictive: Hashing is performing operations on the keys rather than just 
+comparison between the keys. A similar bound can be obtained by using bucket sort instead of a standard 
+sorting algorithm. Operations such as hashing are much more expensive than comparisons in practice, so this 
+bound might not be an improvement. On the other hand, if the output polynomial is expected to have only 
+O(M + N) terms, then using a hash table saves a huge amount of space, since under these conditions, the hash 
+table needs only O(M + N) space. 
+Another method of implementing these operations is to use a search tree instead of a hash table; a 
+balanced tree is required because elements are inserted in the tree with too much order. A splay tree might be 
+particularly well suited for this type of a problem because it does well with sequential accesses. Comparing 
+the different ways of solving the problem is a good programming assignment. 
+5.14 
+To each hash table slot, we can add an extra data member that we’ll call whereOnStack, and we can keep an 
+extra stack. When an insertion is first performed into a slot, we push the address (or number) of the slot onto 
+the stack and set the whereOnStack data member to refer to the top of the stack. When we access a hash table 
+slot, we check that whereOnStack refers to a valid part of the stack and that the entry in the (middle of the) 
+stack that is referred to by the whereOnStack data member has that hash table slot as an address. 
+5.16 
+If the switch expression and case values are String objects, then a compiler can use the String class 
+hashCode() method to assign an integer key value to each string value. In this way, String objects can be 
+treated like integer values. 
+5.19 
+(a) The cost of an unsuccessful search equals the cost of an insertion. 
+ 
+(b) 
+0
+1
+1
+( )
+ln(1
+)
+1
+ln(1
+)
+2
+1
+I
+x
+x
+dx
+x
+
+
+=
+−
+−
+−
+= −
+−−
+
+
+
+−
+
+
+
+ 
+5.20 
+public class Map<KeyType, ValueType> 
+{ 
+ public Map() 
+ { 
+ items = new 
+QuadraticProbingHashTable<Entry<KeyType,ValueType>>(); 
+ } 
+ 
+ public void put( KeyType key, ValueType val ) 
+ { 
+ Entry<KeyType, ValueType> e = new Entry<KeyType, ValueType>(key, 
+val); 
+ items.insert( e ); 
+ } 
+ 
+ public ValueType get( KeyType key ) 
+ { 
+ ValueType v = (ValueType) new Object(); 
+ Entry<KeyType, ValueType> e = new Entry<KeyType, ValueType>(key, 
+v); 
+ e = items.find(e); 
+ return e.val; 
+ } 
+ 
+ public boolean isEmpty() 
+ { return items.isEmpty(); } 
+ 
+ public void makeEmpty() 
+ { items.makeEmpty(); } 
+ 
+ private QuadraticProbingHashTable<Entry<KeyType,ValueType>> items; 
+ 
+ private static class Entry<KeyType, ValueType> 
+ { 
+ Entry( KeyType k, ValueType v ) 
+ { 
+ key = k; 
+ val = v; 
+ } 
+ 
+ public int hashCode() 
+ { 
+ return key.hashCode(); 
+ } 
+ 
+ //public boolean equals( Entry<KeyType, ValueType> rhs ) 
+ public boolean equals( Object rhs ) 
+ { 
+ return rhs instanceof Entry && 
+ key.equals( ((Entry<KeyType, ValueType>)rhs).key ); 
+ } 
+ 
+ private KeyType key; 
+ private ValueType val; 
+ } 
+} 
+ 
+The QuadraticProbingHashTable.java file needs these additional methods (not given in the text) for the 
+above solution to work: 
+ public boolean isEmpty( ) 
+ { 
+ return currentSize == 0; 
+ } 
+ public AnyType find( AnyType x ) 
+ { 
+ int currentPos = findPos( x ); 
+ return isActive( currentPos ) ? array[ currentPos ].element : 
+null; 
+ } 
+ 
+ 
+ 
+5.22 
+Markov's inequality states that there is at most a probability of 1/n of experiencing a "score" or expected 
+value of n or greater. One way to prove it is to view it as a continuous version of the pigeonhole principle. 
+Suppose Markov’e inequality does not hold. Then, it is possible to have a probability of 1/n of 
+experiencing an expected value of at least n+e, where e > 0. The sum of these expected values would be 
+(n+e)/n = 1 + e/n > 1, but this is impossible since the sum of probabilities cannot exceed 1. 
+Applying to Theorem 5.2, we can say that there is a probability of at most 1/2 that a bin has 2 or more balls 
+in it. This is exactly the statement of Theorem 5.2, so we can simplify the proof of the theorem by simply 
+appealing to Markov's inequality. 
+In the discussion of Theorem 5.3 on pp. 194-195, the expected value of the secondary hash table size is 2N. 
+Using Markov's inequality again with a probability of 1/2, we can state that: there is at most a probability 
+of 1/2 that the secondary hash table will be at least twice the expected value, which is 2*2N = 4N. 
+As a result, we can see that Markov's inequality can simplify the discussions of Theorems 5.2 and 5.3. 
+Also, by substituting a different level of probability other than 1/2, further statements regarding the number 
+of balls in a bin or the size of a secondary hash table could be made. 
+For Theorem 5.2, we can say that there is a probability of at most 1/k that a bin has k or more balls in it. In 
+the case of Theorem 5.3, in general, we can say there is a probability of 1/k that the secondary hash table 
+will be at least k times the expected value, i.e. at least 2kN. 
+5.23 
+The probability of a rehash (failed insertion) at the point when the table is half full is low, on the order of 
+1% or less. The probability falls with increased table size. Below are the results of two trials with random 
+insertion data. The probabilities may be even lower if we modify the hopscotch table to continue linear 
+probing past the end of the table to wrap around to the beginning. 
+Table size 
+MAX_DIST 
+Load factor 
+Number of trials 
+Probability of rehash 
+27 – 1 = 63 
+26 – 1 = 31 
+0.5 
+1,000,000 
+0.011000 
+213 – 1 = 8191 
+212 – 1 = 4095 
+0.5 
+1,000,000 
+0.000194 
+ 
+5.24 
+Here is a Java implementation of a Hopscotch hash table. It consists of two source files, Hopscotch.java 
+and Cell.java. 
+/** Hopscotch.java 
+ */ 
+public class Hopscotch 
+{ 
+ private int maxDist; 
+ private int maxSize; 
+ private Cell [] table; 
+ 
+ public Hopscotch(int dist, int size) 
+ { 
+ maxDist = dist; 
+ maxSize = size; 
+ 
+ table = new Cell [maxSize]; 
+ 
+ for (int i = 0; i < maxSize; ++i) 
+ table[i] = new Cell(); 
+ } 
+ 
+ public boolean add(String data, int hashValue) 
+ { 
+ //System.out.printf("Attempting to insert %s with hash value %d\n", data, 
+hashValue); 
+ 
+ // Attempt to put the data into the table at index hashValue. 
+ // If that space is taken, then we do linear probing, but only 
+ // within the limitation of the MAX_DIST. 
+ // Also make the approprate change to the "hop" entry in the cell. 
+ // If linear probing goes too far, then we must follow the eviction\ 
+ // procedure explained in the text. 
+ 
+ // First, see if this cell is occupied or available. 
+ boolean available = table[hashValue].data == null; 
+ 
+ if (available) 
+ { 
+ //System.out.printf("The cell at our hash value is itself 
+available.\n"); 
+ 
+ table[hashValue].data = data; 
+ table[hashValue].hop |= (1 << 0); // turn on bit 0 
+ return true; 
+ } 
+ else 
+ { 
+ //System.out.printf("Need to try some linear probing.\n"); 
+ 
+ boolean successfullyPlaced = false; 
+ for (int i = 1; i < maxDist; ++i) 
+ { 
+ // Reject a table index that is too high! 
+ if (hashValue + i >= maxSize) 
+ { 
+ //System.out.printf("Linear probing reached end of table in 
+failure\n"); 
+ return false; 
+ } 
+ 
+ available = table[hashValue + i].data == null; 
+ if (available) 
+ { 
+ table[hashValue + i].data = data; 
+ table[hashValue].hop |= (1 << i); // turn on bit i 
+ successfullyPlaced = true; 
+ return true; // Only need to place once! 
+ } 
+ } 
+ 
+ // The only problem left is if we did not successfully insert the data. 
+ if (! successfullyPlaced) 
+ { 
+ //System.out.printf("Need to evict\n"); 
+ 
+ // First, find the linear probing destination (which is too far). 
+ boolean found = false; 
+ int availableCell = -1; 
+ for (int i = hashValue; i < maxSize; ++i) 
+ if (table[i].data == null) 
+ { 
+ availableCell = i; 
+ found = true; 
+ break; 
+ } 
+ if (! found) 
+ { 
+ System.out.printf("Linear probing found no available cell.\n"); 
+ return false; 
+ } 
+ 
+ // We need to evict somebody to go into the available cell. 
+ // Search other data that could possibly fit into the available cell. 
+ // Because of the maxDist restriction, a candidate would need to have 
+ // a hash value no lower than availableCell - maxDist + 1. 
+ // In other words: 
+ // For each hashValue 
+ // from availableCell - maxDist + 1 to availableCell - 1, 
+ // Look at the "hop" bit vector to see which data that has this 
+ // hash value can possibly be moved into the available cell. 
+ // If there isn't any, then proceed to the next hash value. 
+ // Perform the appropriate eviction. 
+ // Update the value of availableCell to be the place we evicted from. 
+ // Repeat the process until the availableCell is reachable, meaning 
+ // it is no more than the inserting data's hashValue + maxDist - 1. 
+ 
+ do 
+ { 
+ //System.out.printf("availableCell = %d\n", availableCell); 
+ found = false; 
+ int evictFrom = -1; 
+ 
+ for (int i = availableCell - maxDist + 1; i <= availableCell - 1; 
+++i) 
+ { 
+ //System.out.printf("Considering hash value i = %d\n", i); 
+ // for each bit position j. 
+ // Note that i+j will be the place we will evict data from. 
+ // But this location must be less than the availableCell. 
+ for (int j = 0; j < maxDist && (i+j < availableCell); ++j) 
+ if ((table[i].hop & (1 << j)) != 0) 
+ { 
+ evictFrom = i + j; 
+ //System.out.printf("%s can move from %d to %d\n", 
+ // table[i+j].data, i+j, availableCell); 
+ table[availableCell].data = table[i+j].data; 
+ table[i+j].data = null; 
+ table[i].hop &= ~(1 << j); // turn off old 
+bit 
+ table[i].hop |= 1 << (availableCell - i); // turn on new 
+bit 
+ //System.out.println(this); 
+ found = true; 
+ break; 
+ } 
+ if (found) 
+ break; 
+ } 
+ 
+ if (! found) 
+ { 
+ //System.out.printf("No eviction was possible to make room.\n"); 
+ return false; 
+ } 
+ 
+ availableCell = evictFrom; 
+ //System.out.printf("Now, availableCell = %d, while hashValue = 
+%d\n", 
+ // availableCell, hashValue); 
+ } while (availableCell - hashValue >= maxDist); 
+ 
+ // At this point, the distance from hashValue and availableCell 
+ // is sufficiently small. This means we can go ahead and put the 
+ // desired data value into the hopscotch table. 
+ table[availableCell].data = data; 
+ table[hashValue].hop |= 1 << (availableCell - hashValue); 
+ return true; 
+ } 
+ } 
+ return true; // please the compiler 
+ } 
+ 
+ public String toString() 
+ { 
+ StringBuilder build = new StringBuilder(); 
+ 
+ // It may not be necessary to display the entire table. 
+ // Find the first and last non-null cells. 
+ int low = 0; 
+ int high = maxSize - 1; 
+ 
+ while (low < maxSize) 
+ { 
+ if (table[low].data == null) 
+ ++low; 
+ else 
+ break; 
+ } 
+ while (high >= 0) 
+ { 
+ if (table[high].data == null) 
+ --high; 
+ else 
+ break; 
+ } 
+ 
+ // System.out.printf("low = %d, high = %d\n", low,high); 
+ 
+ if (low <= high) 
+ { 
+ for (int i = low; i <= high; ++i) 
+ { 
+ build.append("" + i + " " + table[i].data + " "); 
+ 
+ // Followed by a little-endian bit representation of "hop". 
+ for (int j = 0; j < maxDist; ++j) 
+ if ((table[i].hop & (1 << j)) == 0) 
+ build.append("0"); 
+ else 
+ build.append("1"); 
+ 
+ build.append("\n"); 
+ } 
+ } 
+ 
+ return build.toString(); 
+ } 
+} 
+ 
+/** Cell.java - each cell in the hopscotch table needs 
+ * two pieces of information: the data being stored, 
+ * and the "hop" bit vector. 
+ */ 
+public class Cell 
+{ 
+ protected String data; 
+ protected int hop; 
+ 
+ public Cell() 
+ { 
+ data = null; 
+ hop = 0; 
+ } 
+} 
+ 
+The amount of time to insert 10,000 elements for various sample implementations is given below. The 
+advantage of hopscotch hashing is not in the computational efficiency of the average case. 
+Implementation 
+Time (ms) 
+Hopscotch 
+150 
+Cuckoo 
+991 
+Linear probing 
+10 
+Separate chaining 
+40 
+ 
+ 
+5.25 
+Here is a Java implementation of a cuckoo hash table. Diagnostic output can, of course, be removed. 
+// To mimic the "classic" cuckoo hash table, as shown in the examples 
+// given in Figures 5.26-5.33 in the text, 
+public class CuckooHashTable 
+{ 
+ private static final int LOGICAL_SIZE = 13; 
+ private String [][] contents; 
+ private int currentSize; 
+ 
+ public CuckooHashTable() 
+ { 
+ contents = new String [LOGICAL_SIZE][2]; 
+ currentSize = 0; 
+ } 
+ 
+ public void makeEmpty() 
+ { 
+ for (int i = 0; i < contents.length; ++i) 
+ for (int j = 0; j < contents[0].length; ++j) 
+ contents[i][j] = null; 
+ } 
+ 
+ // For Cuckoo hashing, we need to be ready to compute the value 
+ // of an n-th hash code. Multiply the string's native hash code 
+ // by the table number (e.g. 1 or 2...), and mod by the logical size. 
+ // Here, we consider the "table number" to start at 1 because it 
+ // would undesirable to multiply by 0. 
+ public int hashCode(String value, int which) 
+ { 
+ return (value.hashCode() * (which+1)) % LOGICAL_SIZE; 
+ } 
+ 
+ public void add(String value) 
+ { 
+ System.out.printf("Entering add() with value = %s\n", value); 
+ 
+ // The item automatically goes into the first logical table, 
+ // i.e. the first column of our representation. 
+ // But doing so may displace whoever is currently there. 
+ int desiredCol = 0; 
+ int desiredRow = hashCode(value, desiredCol); 
+ 
+ while (true) 
+ { 
+ System.out.printf("contents[%d][%d] = ", desiredRow, desiredCol); 
+ System.out.println(contents[desiredRow][desiredCol]); 
+ 
+ if (contents[desiredRow][desiredCol] == null) 
+ { 
+ contents[desiredRow][desiredCol] = value; 
+ break; 
+ } 
+ 
+ // The case of having to evict something already there. 
+ else 
+ { 
+ String victim = contents[desiredRow][desiredCol]; 
+ contents[desiredRow][desiredCol] = value; 
+ 
+ // Put the victim in its "other" location in the next column. 
+ desiredCol = (desiredCol + 1) % contents[0].length; 
+ desiredRow = hashCode(value, desiredCol); 
+ 
+ System.out.printf("Need to replace a victim: %s\n", victim); 
+ System.out.printf(" new row/col = [%d][%d]\n", desiredRow, 
+desiredCol); 
+ } 
+ } 
+ } 
+} 
+ 
+5.26 
+To support d hash functions, the only modification necessary in the implementation given in 5.25 is to 
+change the way the “contents” array is allocated in the CuckooHashTable constructor, so that it has d 
+columns instead of 2 columns. The new statement should read: 
+contents = new String [LOGICAL_SIZE][d]; 
+5.27

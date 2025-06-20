@@ -1,0 +1,514 @@
+CHAPTER 6 
+Priority Queues (Heaps) 
+6.1 
+Yes. When an element is inserted, we compare it to the current minimum and change the minimum if the new 
+element is smaller. deleteMin operations are expensive in this scheme. 
+6.2 
+ 
+6.3 
+The result of three deleteMins, starting with both of the heaps in Exercise 6.2, is as follows: 
+ 
+6.4 
+(a) 4N 
+ 
+(b) O(N2) 
+ 
+(c) O(N4.1) 
+ 
+(d) O(2N) 
+6.5 
+ public void insert( AnyType x ) 
+ { 
+ if ( currentSize = = array.length - 1 ) 
+ enlargeArray( array.length * 2 + 1 ); 
+ 
+ // Percolate up 
+ int hole = + + currentSize; 
+ for ( ; hole > 1 && x.compareTo( array[ hole / 2 ] ) < 0; hole 
+/ = 2) 
+ array[ hole ] = array[ hole/2 ]; 
+ array[ 0 ] = array[ hole ] = x; 
+ } 
+ 
+6.6 
+225. To see this, start with i = 1 and position at the root. Follow the path toward the last node, doubling i 
+when taking a left child, and doubling i and adding one when taking a right child. 
+6.7 
+(a) We show that H(N), which is the sum of the heights of nodes in a complete binary tree of N nodes, is 
+N − b(N), where b(N) is the number of ones in the binary representation of N. Observe that for N = 0 and 
+N = 1, the claim is true. Assume that it is true for values of k up to and including N − 1. Suppose the left and 
+right subtrees have L and R nodes, respectively. Since the root has height log N
+
+
+
+, we have 
+(
+)
+( )
+log
+( )
+( )
+log
+( )
+( )
+1
+Log
+( )
+( )
+H N
+N
+H L
+H R
+N
+L
+b L
+R
+b R
+N
+N
+b L
+b R
+=
++
++
+
+
+
+
+=
++
+−
++
+−
+
+
+
+
+=
+−
++
+−
+−
+
+
+
+
+ 
+The second line follows from the inductive hypothesis, and the third follows because L + R = N − 1. Now the 
+last node in the tree is in either the left subtree or the right subtree. If it is in the left subtree, then the right 
+subtree is a perfect tree, and ( )
+log
+1
+b R
+N
+=
+−
+
+
+
+
+. Further, the binary representation of N and L are identical, 
+with the exception that the leading 10 in N becomes 1 in L. (For instance, if N = 37 = 100101, L = 10101.) It 
+is clear that the second digit of N must be zero if the last node is in the left subtree. Thus in this case, 
+b(L) = b(N), and 
+H(N) = N − b(N) 
+If the last node is in the right subtree, then ( )
+log
+b L
+N
+= 
+
+
+. The binary representation of R is identical to 
+N, except that the leading 1 is not present. (For instance, if N = 27 = 101011, L = 01011.) Thus 
+b(R) = b(N) − 1, and again 
+H(N) = N − b(N) 
+(b) Run a single-elimination tournament among eight elements. This requires seven comparisons and 
+generates ordering information indicated by the binomial tree shown here. 
+ 
+The eighth comparison is between b and c. If c is less than b, then b is made a child of c. Otherwise, both 
+c and d are made children of b. 
+(c) A recursive strategy is used. Assume that N = 2k. A binomial tree is built for the N elements as in part (b). 
+The largest subtree of the root is then recursively converted into a binary heap of 2k − 1 elements. The last 
+element in the heap (which is the only one on an extra level) is then inserted into the binomial queue 
+consisting of the remaining binomial trees, thus forming another binomial tree of 2k − 1 elements. At that 
+point, the root has a subtree that is a heap of 2k − 1 − 1 elements and another subtree that is a binomial tree of 
+2k−1 elements. Recursively convert that subtree into a heap; now the whole structure is a binary heap. The 
+running time for N = 2k satisfies T(N) = 2T(N/2) + log N. The base case is T(8) = 8. 
+6.9 
+Let D1, D2, . . . ,Dk be random variables representing the depth of the smallest, second smallest, and kth 
+smallest elements, respectively. We are interested in calculating E(Dk). In what follows, we assume that the 
+heap size N is one less than a power of two (that is, the bottom level is completely filled) but sufficiently 
+large so that terms bounded by O(1/N) are negligible. Without loss of generality, we may assume that the kth 
+smallest element is in the left subheap of the root. Let pj, k be the probability that this element is the jth 
+smallest element in the subheap. 
+Lemma. 
+For k > 1, 
+1
+1
+(
+)
+( (
+)
+1)
+k
+k
+j,k
+j
+j
+E D
+p
+E D
+−
+=
+=
++
+
+. 
+Proof. 
+An element that is at depth d in the left subheap is at depth d + 1 in the entire subheap. Since 
+E(Dj + 1) = E(Dj) + 1, the theorem follows. 
+Since by assumption, the bottom level of the heap is full, each of second, third, . . . , k − 1th smallest 
+elements are in the left subheap with probability of 0.5. (Technically, the probability should be half − 1/(N − 
+1) of being in the right subheap and half + 1/(N − 1) of being in the left, since we have already placed the kth 
+smallest in the right. Recall that we have assumed that terms of size O(1/N) can be ignored.) Thus 
+2
+2
+1
+1
+2
+j,k
+k
+j,k
+k
+k
+p
+p
+j
+−
+−
+−
+
+
+=
+=
+
+
+−
+
+
+ 
+Theorem. 
+E(Dk)  log k. 
+Proof. 
+The proof is by induction. The theorem clearly holds for k = 1 and k = 2. We then show that it holds for 
+arbitrary k > 2 on the assumption that it holds for all smaller k. Now, by the inductive hypothesis, for any 
+1  j  k − 1, 
+(
+)
+(
+)
+log
+log
+j
+k
+j
+E D
+E D
+j
+k
+j
+−
++
+
++
+−
+ 
+Since f(x) = log x is convex for x > 0, 
+log
+log
+2 log(
+2)
+j
+k
+j
+k
++
+−
+
+ 
+Thus 
+(
+)
+(
+)
+log(
+2)
+log(
+2)
+j
+k
+j
+E D
+E D
+k
+k
+−
++
+
++
+ 
+Furthermore, since pj, k = pk − j, k, 
+(
+)
+(
+)
+log(
+2)
+log(
+2)
+j,k
+j
+k
+j,k
+k
+j
+j,k
+k
+j,k
+p
+E D
+p
+E D
+p
+k
+p
+k
+−
+−
+−
++
+
++
+ 
+From the lemma, 
+1
+,
+1
+1
+,
+1
+(
+)
+( (
+) +1)
+1
+(
+)
+k
+k
+j k
+j
+j
+k
+j k
+j
+j
+E D
+p
+E D
+p
+E D
+−
+=
+−
+=
+=
+=
++
+
+
+ 
+Thus 
+1
+,
+1
+1
+,
+1
+(
+)
+1
+log(
+2)
+1
+log (
+2)
+1
+log(
+2)
+log
+k
+k
+j k
+j
+k
+j k
+j
+E D
+p
+k
+k
+p
+k
+k
+−
+=
+−
+=
+
++
+
++
+
++
+
+
+
+ 
+completing the proof. 
+It can also be shown that asymptotically, E(Dk)  log(k − 1) − 0.273548. 
+6.10 
+(a) Perform a preorder traversal of the heap. 
+ 
+(b) Works for leftist and skew heaps. The running time is O(Kd) for d-heaps. 
+6.12 
+Simulations show that the linear time algorithm is the faster, not only on worst-case inputs, but also on 
+random data. 
+6.13 
+(a) If the heap is organized as a (min) heap, then starting at the hole at the root, find a path down to a leaf by 
+taking the minimum child. The requires roughly log N comparisons. To find the correct place where to move 
+the hole, perform a binary search on the log N elements. This takes O(log log N) comparisons. 
+ 
+(b) Find a path of minimum children, stopping after log N − log log N levels. At this point, it is easy to 
+determine if the hole should be placed above or below the stopping point. If it goes below, then continue 
+finding the path, but perform the binary search on only the last log log N elements on the path, for a total of 
+log N + log log log N comparisons. Otherwise, perform a binary search on the first log N − log log N 
+elements. The binary search takes at most log log N comparisons, and the path finding took only log N − log 
+log N, so the total in this case is log N. So the worst case is the first case. 
+ 
+(c) The bound can be improved to log N + log*N + O(1), where log*N is the inverse Ackerman function (see 
+Chapter 8). This bound can be found in reference [17]. 
+6.14 
+The parent is at position (
+2)
+i
+d
+d
++
+−
+
+
+
+. The children are in positions (i − 1)d + 2, . . . , id + 1. 
+6.15 
+(a) O((M + d N) logd N). 
+ 
+(b) O((M + N) log N). 
+ 
+(c) O(M + N2). 
+ 
+(d) d = max(2, M/N). (See the related discussion at the end of Section 11.4.) 
+6.16 
+Starting from the second most signficant digit in i, and going toward the least significant digit, branch left for 
+0s, and right for 1s. 
+6.17 
+(a) Place negative infinity as a root with the two heaps as subtrees. Then do a deleteMin. 
+ 
+(b) Place negative infinity as a root with the larger heap as the left subheap, and the smaller heap as the right 
+subheap. Then do a deleteMin. 
+ 
+(c) SKETCH: Split the larger subheap into smaller heaps as follows: on the left-most path, remove two 
+subheaps of height r − 1, then one of height r, r + 1, and so one, until l − 2. Then merge the trees, going 
+smaller to higher, using the results of parts (a) and (b), with the extra nodes on the left path substituting for 
+the insertion of infinity, and subsequent deleteMin. 
+6.19 
+ 
+6.20 
+ 
+6.21 
+This theorem is true, and the proof is very much along the same lines as Exercise 4.20. 
+6.22 
+If elements are inserted in decreasing order, a leftist heap consisting of a chain of left children is formed. This 
+is the best because the right path length is minimized. 
+6.23 
+(a) If a decreaseKey is performed on a node that is very deep (very left), the time to percolate up would be 
+prohibitive. Thus the obvious solution doesn’t work. However, we can still do the operation efficiently by a 
+combination of remove and insert. To remove an arbitrary node x in the heap, replace x by the merge of its 
+left and right subheaps. This might create an imbalance for nodes on the path from x’s parent to the root that 
+would need to be fixed by a child swap. However, it is easy to show that at most logN nodes can be affected, 
+preserving the time bound. 
+ 
+This is discussed in Chapter 11. 
+6.24 
+Lazy deletion in leftist heaps is discussed in the paper by Cheriton and Tarjan [10]. The general idea is that if 
+the root is marked deleted, then a preorder traversal of the heap is formed, and the frontier of marked nodes is 
+removed, leaving a collection of heaps. These can be merged two at a time by placing all the heaps on a 
+queue, removing two, merging them, and placing the result at the end of the queue, terminating when only 
+one heap remains. 
+6.25 
+(a) The standard way to do this is to divide the work into passes. A new pass begins when the first element 
+reappears in a heap that is dequeued. The first pass takes roughly 2*1*(N/2) time units because there are N/2 
+merges of trees with one node each on the right path. The next pass takes 2*2*(N/4) time units because of the 
+roughly N/4 merges of trees with no more than two nodes on the right path. The third pass takes 2*3*(N/8) 
+time units, and so on. The sum converges to 4N. 
+ 
+(b) It generates heaps that are more leftist. 
+6.26
+ 
+6.27
+ 
+6.28 
+This claim is also true, and the proof is similar in spirit to Exercise 4.20 or 6.21. 
+6.29 
+Yes. All the single operation estimates in Exercise 6.25 become amortized instead of worst-case, but by the 
+definition of amortized analysis, the sum of these estimates is a worst-case bound for the sequence. 
+6.30 
+Clearly the claim is true for k = 1. Suppose it is true for all values i = 1, 2, . . . , k. A Bk + 1 tree is formed by 
+attaching a Bk tree to the root of a Bk tree. Thus by induction, it contains a B0 through Bk − 1 tree, as well as the 
+newly attached Bk tree, proving the claim. 
+6.31 
+Proof is by induction. Clearly the claim is true for k = 1. Assume true for all values i = 1, 2, . . . ,k. A Bk + 1 
+tree is formed by attaching a Bk tree to the original Bk tree. The original thus had k
+d
+
+
+
+
+
+
+ nodes at depth d. The 
+attached tree had 
+1
+k
+d
+
+
+
+
+−
+
+
+ nodes at depth d−1, which are now at depth d. Adding these two terms and using a 
+well-known formula establishes the theorem. 
+6.32
+ 
+6.33 
+This is established in Chapter 11. 
+6.38 
+Don’t keep the key values in the heap, but keep only the difference between the value of the key in a node 
+and the value of the parent’s key. 
+6.39 
+O(N + k log N) is a better bound than O(N log k). The first bound is O(N) if k = O(N/log N). The second 
+bound is more than this as soon as k grows faster than a constant. For the other values (N/log N) = k = (N), 
+the first bound is better. When k = (N), the bounds are identical.

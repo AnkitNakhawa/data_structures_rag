@@ -1,0 +1,3480 @@
+C H A P T E R 5
+Hashing
+In Chapter 4, we discussed the search tree ADT, which allowed various operations on a set
+of elements. In this chapter, we discuss the hash table ADT, which supports only a subset of
+the operations allowed by binary search trees.
+The implementation of hash tables is frequently called hashing. Hashing is a technique used for performing insertions, deletions, and searches in constant average time.
+Tree operations that require any ordering information among the elements are not supported efficiently. Thus, operations such as findMin, findMax, and the printing of the entire
+table in sorted order in linear time are not supported.
+The central data structure in this chapter is the hash table. We will
+r See several methods of implementing the hash table.
+r Compare these methods analytically.
+r Show numerous applications of hashing.
+r Compare hash tables with binary search trees.
+5.1 General Idea
+The ideal hash table data structure is merely an array of some fixed size, containing the
+items. As discussed in Chapter 4, generally a search is performed on some part (that is,
+data field) of the item. This is called the key. For instance, an item could consist of a string
+(that serves as the key) and additional data fields (for instance, a name that is part of a large
+employee structure). We will refer to the table size as TableSize, with the understanding that
+this is part of a hash data structure and not merely some variable floating around globally.
+The common convention is to have the table run from 0 to TableSize −1; we will see why
+shortly.
+Each key is mapped into some number in the range 0 to TableSize −1 and placed
+in the appropriate cell. The mapping is called a hash function, which ideally should be
+simple to compute and should ensure that any two distinct keys get different cells. Since
+there are a finite number of cells and a virtually inexhaustible supply of keys, this is clearly
+impossible, and thus we seek a hash function that distributes the keys evenly among the
+cells. Figure 5.1 is typical of a perfect situation. In this example, john hashes to 3, phil
+hashes to 4, dave hashes to 6, and mary hashes to 7.
+171
+172
+Chapter 5
+Hashing
+john 25000
+phil 31250
+dave 27500
+mary 28200
+0
+1
+2
+3
+4
+5
+6
+7
+8
+9
+Figure 5.1 An ideal hash table
+This is the basic idea of hashing. The only remaining problems deal with choosing a
+function, deciding what to do when two keys hash to the same value (this is known as a
+collision), and deciding on the table size.
+5.2 Hash Function
+If the input keys are integers, then simply returning Key mod TableSize is generally a reasonable strategy, unless Key happens to have some undesirable properties. In this case, the
+choice of hash function needs to be carefully considered. For instance, if the table size
+is 10 and the keys all end in zero, then the standard hash function is a bad choice. For
+reasons we shall see later, and to avoid situations like the one above, it is often a good idea
+to ensure that the table size is prime. When the input keys are random integers, then this
+function is not only very simple to compute but also distributes the keys evenly.
+Usually, the keys are strings; in this case, the hash function needs to be chosen carefully.
+One option is to add up the ASCII (or Unicode) values of the characters in the string.
+The routine in Figure 5.2 implements this strategy.
+The hash function depicted in Figure 5.2 is simple to implement and computes an
+answer quickly. However, if the table size is large, the function does not distribute the keys
+well. For instance, suppose that TableSize = 10,007 (10,007 is a prime number). Suppose
+all the keys are eight or fewer characters long. Since an ASCII character has an integer value
+that is always at most 127, the hash function typically can only assume values between 0
+and 1,016, which is 127 ∗8. This is clearly not an equitable distribution!
+Another hash function is shown in Figure 5.3. This hash function assumes that Key has
+at least three characters. The value 27 represents the number of letters in the English alphabet, plus the blank, and 729 is 272. This function examines only the first three characters,
+5.2
+Hash Function
+173
+1
+public static int hash( String key, int tableSize )
+2
+{
+3
+int hashVal = 0;
+4
+5
+for( int i = 0; i < key.length( ); i++ )
+6
+hashVal += key.charAt( i );
+7
+8
+return hashVal % tableSize;
+9
+}
+Figure 5.2 A simple hash function
+1
+public static int hash( String key, int tableSize )
+2
+{
+3
+return ( key.charAt( 0 ) + 27 * key.charAt( 1 ) +
+4
+729 * key.charAt( 2 ) ) % tableSize;
+5
+}
+Figure 5.3 Another possible hash function—not too good
+but if these are random and the table size is 10,007, as before, then we would expect a
+reasonably equitable distribution. Unfortunately, English is not random. Although there
+are 263 = 17,576 possible combinations of three characters (ignoring blanks), a check
+of a reasonably large online dictionary reveals that the number of different combinations
+is actually only 2,851. Even if none of these combinations collide, only 28 percent of the
+table can actually be hashed to. Thus this function, although easily computable, is also not
+appropriate if the hash table is reasonably large.
+Figure 5.4 shows a third attempt at a hash function. This hash function involves
+all characters in the key and can generally be expected to distribute well (it computes
+KeySize−1
+i=0
+Key[KeySize −i −1] · 37i and brings the result into proper range). The code
+computes a polynomial function (of 37) by use of Horner’s rule. For instance, another way
+of computing hk = k0 + 37k1 + 372k2 is by the formula hk = ((k2) ∗37 + k1) ∗37 + k0.
+Horner’s rule extends this to an nth degree polynomial.
+The hash function takes advantage of the fact that overflow is allowed. This may
+introduce a negative number; thus the extra test at the end.
+The hash function described in Figure 5.4 is not necessarily the best with respect to
+table distribution but does have the merit of extreme simplicity and is reasonably fast. If the
+keys are very long, the hash function will take too long to compute. A common practice in
+this case is not to use all the characters. The length and properties of the keys would then
+influence the choice. For instance, the keys could be a complete street address. The hash
+function might include a couple of characters from the street address and perhaps a couple
+of characters from the city name and ZIP code. Some programmers implement their hash
+function by using only the characters in the odd spaces, with the idea that the time saved
+computing the hash function will make up for a slightly less evenly distributed function.
+174
+Chapter 5
+Hashing
+1
+/**
+2
+* A hash routine for String objects.
+3
+* @param key the String to hash.
+4
+* @param tableSize the size of the hash table.
+5
+* @return the hash value.
+6
+*/
+7
+public static int hash( String key, int tableSize )
+8
+{
+9
+int hashVal = 0;
+10
+11
+for( int i = 0; i < key.length( ); i++ )
+12
+hashVal = 37 * hashVal + key.charAt( i );
+13
+14
+hashVal %= tableSize;
+15
+if( hashVal < 0 )
+16
+hashVal += tableSize;
+17
+18
+return hashVal;
+19
+}
+Figure 5.4 A good hash function
+The main programming detail left is collision resolution. If, when an element is
+inserted, it hashes to the same value as an already inserted element, then we have a collision and need to resolve it. There are several methods for dealing with this. We will
+discuss two of the simplest: separate chaining and open addressing; then we will look at
+some more recently discovered alternatives.
+5.3 Separate Chaining
+The first strategy, commonly known as separate chaining, is to keep a list of all elements
+that hash to the same value. We can use the standard library list implementations. If space
+is tight, it might be preferable to avoid their use (since those lists are doubly linked and
+waste space). We assume, for this section, that the keys are the first 10 perfect squares and
+that the hashing function is simply hash(x) = x mod 10. (The table size is not prime but is
+used here for simplicity.) Figure 5.5 should make this clear.
+To perform a search, we use the hash function to determine which list to traverse. We
+then search the appropriate list. To perform an insert, we check the appropriate list to see
+whether the element is already in place (if duplicates are expected, an extra field is usually
+kept, and this field would be incremented in the event of a match). If the element turns
+out to be new, it is inserted at the front of the list, since it is convenient and also because
+frequently it happens that recently inserted elements are the most likely to be accessed in
+the near future.
+The class skeleton required to implement separate chaining is shown in Figure 5.6.
+The hash table stores an array of linked lists, which are allocated in the constructor.
+5.3
+Separate Chaining
+175
+0
+81
+1
+64
+4
+25
+36
+16
+49
+9
+0
+1
+2
+3
+4
+5
+6
+7
+8
+9
+Figure 5.5 A separate chaining hash table
+1
+public class SeparateChainingHashTable<AnyType>
+2
+{
+3
+public SeparateChainingHashTable( )
+4
+{ /* Figure 5.9 */ }
+5
+public SeparateChainingHashTable( int size )
+6
+{ /* Figure 5.9 */ }
+7
+8
+public void insert( AnyType x )
+9
+{ /* Figure 5.10 */ }
+10
+public void remove( AnyType x )
+11
+{ /* Figure 5.10 */ }
+12
+public boolean contains( AnyType x )
+13
+{ /* Figure 5.10 */ }
+14
+public void makeEmpty( )
+15
+{ /* Figure 5.9 */ }
+16
+17
+private static final int DEFAULT_TABLE_SIZE = 101;
+18
+19
+private List<AnyType> [ ] theLists;
+20
+private int currentSize;
+21
+22
+private void rehash( )
+23
+{ /* Figure 5.22 */ }
+24
+private int myhash( AnyType x )
+25
+{ /* Figure 5.7 */ }
+26
+27
+private static int nextPrime( int n )
+28
+{ /* See online code */ }
+29
+private static boolean isPrime( int n )
+30
+{ /* See online code */ }
+31
+}
+Figure 5.6 Class skeleton for separate chaining hash table
+176
+Chapter 5
+Hashing
+1
+private int myhash( AnyType x )
+2
+{
+3
+int hashVal = x.hashCode( );
+4
+5
+hashVal %= theLists.length;
+6
+if( hashVal < 0 )
+7
+hashVal += theLists.length;
+8
+9
+return hashVal;
+10
+}
+Figure 5.7
+myHash method for hash tables
+1
+public class Employee
+2
+{
+3
+public boolean equals( Object rhs )
+4
+{ return rhs instanceof Employee && name.equals( ((Employee)rhs).name ); }
+5
+6
+public int hashCode( )
+7
+{ return name.hashCode( ); }
+8
+9
+private String name;
+10
+private double salary;
+11
+private int seniority;
+12
+13
+// Additional fields and methods
+14
+}
+Figure 5.8 Example of Employee class that can be in a hash table
+Just as the binary search tree works only for objects that are Comparable, the hash tables
+in this chapter work only for objects that follow a certain protocol. In Java such objects
+must provide an appropriate equals method and a hashCode method that returns an int.
+The hash table can then scale this int into a suitable array index via myHash, as shown in
+Figure 5.7. Figure 5.8 illustrates an Employee class that can be stored in a hash table. The
+Employee class provides an equals method and a hashCode method based on the Employee’s
+name. The hashCode for the Employee class works by using the hashCode defined in the
+Standard String class. That hashCode is basically the code in Figure 5.4 with lines 14–16
+removed.
+Figure 5.9 shows the constructors and makeEmpty.
+The code to implement contains, insert, and remove is shown in Figure 5.10.
+5.3
+Separate Chaining
+177
+1
+/**
+2
+* Construct the hash table.
+3
+*/
+4
+public SeparateChainingHashTable( )
+5
+{
+6
+this( DEFAULT_TABLE_SIZE );
+7
+}
+8
+9
+/**
+10
+* Construct the hash table.
+11
+* @param size approximate table size.
+12
+*/
+13
+public SeparateChainingHashTable( int size )
+14
+{
+15
+theLists = new LinkedList[ nextPrime( size ) ];
+16
+for( int i = 0; i < theLists.length; i++ )
+17
+theLists[ i ] = new LinkedList<>( );
+18
+}
+19
+20
+/**
+21
+* Make the hash table logically empty.
+22
+*/
+23
+public void makeEmpty( )
+24
+{
+25
+for( int i = 0; i < theLists.length; i++ )
+26
+theLists[ i ].clear( );
+27
+currentSize = 0;
+28
+}
+Figure 5.9 Constructors and makeEmpty for separate chaining hash table
+In the insertion routine, if the item to be inserted is already present, then we do nothing; otherwise, we place it in the list. The element can be placed anywhere in the list; using
+add is most convenient in our case.
+Any scheme could be used besides linked lists to resolve the collisions; a binary search
+tree or even another hash table would work, but we expect that if the table is large and the
+hash function is good, all the lists should be short, so basic separate chaining makes no
+attempt to try anything complicated.
+We define the load factor, λ, of a hash table to be the ratio of the number of elements in
+the hash table to the table size. In the example above, λ = 1.0. The average length of a list
+is λ. The effort required to perform a search is the constant time required to evaluate the
+hash function plus the time to traverse the list. In an unsuccessful search, the number of
+nodes to examine is λ on average. A successful search requires that about 1+(λ/2) links be
+traversed. To see this, notice that the list that is being searched contains the one node that
+stores the match plus zero or more other nodes. The expected number of “other nodes”
+178
+Chapter 5
+Hashing
+1
+/**
+2
+* Find an item in the hash table.
+3
+* @param x the item to search for.
+4
+* @return true if x is not found.
+5
+*/
+6
+public boolean contains( AnyType x )
+7
+{
+8
+List<AnyType> whichList = theLists[ myhash( x ) ];
+9
+return whichList.contains( x );
+10
+}
+11
+12
+/**
+13
+* Insert into the hash table. If the item is
+14
+* already present, then do nothing.
+15
+* @param x the item to insert.
+16
+*/
+17
+public void insert( AnyType x )
+18
+{
+19
+List<AnyType> whichList = theLists[ myhash( x ) ];
+20
+if( !whichList.contains( x ) )
+21
+{
+22
+whichList.add( x );
+23
+24
+// Rehash; see Section 5.5
+25
+if( ++currentSize > theLists.length )
+26
+rehash( );
+27
+}
+28
+}
+29
+30
+/**
+31
+* Remove from the hash table.
+32
+* @param x the item to remove.
+33
+*/
+34
+public void remove( AnyType x )
+35
+{
+36
+List<AnyType> whichList = theLists[ myhash( x ) ];
+37
+if( whichList.contains( x ) )
+38
+{
+39
+whichList.remove( x );
+40
+currentSize--;
+41
+}
+42
+}
+Figure 5.10
+contains, insert, and remove routines for separate chaining hash table
+5.4
+Hash Tables Without Linked Lists
+179
+in a table of N elements and M lists is (N −1)/M = λ −1/M, which is essentially λ, since
+M is presumed to be large. On average, half the “other nodes” are searched, so combined
+with the matching node, we obtain an average search cost of 1 + λ/2 nodes. This analysis
+shows that the table size is not really important, but the load factor is. The general rule
+for separate chaining hashing is to make the table size about as large as the number of
+elements expected (in other words, let λ ≈1). In the code in Figure 5.10, if the load
+factor exceeds 1, we expand the table size by calling rehash at line 26. rehash is discussed
+in Section 5.5. It is also a good idea, as mentioned before, to keep the table size prime to
+ensure a good distribution.
+5.4 Hash Tables Without Linked Lists
+Separate chaining hashing has the disadvantage of using linked lists. This could slow the
+algorithm down a bit because of the time required to allocate new cells (especially in other
+languages), and also essentially requires the implementation of a second data structure.
+An alternative to resolving collisions with linked lists is to try alternative cells until an
+empty cell is found. More formally, cells h0(x), h1(x), h2(x), . . . are tried in succession,
+where hi(x) = (hash(x)+f(i)) mod TableSize, with f(0) = 0. The function, f, is the collision
+resolution strategy. Because all the data go inside the table, a bigger table is needed in such
+a scheme than for separate chaining hashing. Generally, the load factor should be below
+λ = 0.5 for a hash table that doesn’t use separate chaining. We call such tables probing
+hash tables. We now look at three common collision resolution strategies.
+5.4.1 Linear Probing
+In linear probing, f is a linear function of i, typically f(i) = i. This amounts to trying cells
+sequentially (with wraparound) in search of an empty cell. Figure 5.11 shows the result of
+inserting keys {89, 18, 49, 58, 69} into a hash table using the same hash function as before
+and the collision resolution strategy, f(i) = i.
+The first collision occurs when 49 is inserted; it is put in the next available spot, namely,
+spot 0, which is open. The key 58 collides with 18, 89, and then 49 before an empty cell
+is found three away. The collision for 69 is handled in a similar manner. As long as the
+table is big enough, a free cell can always be found, but the time to do so can get quite
+large. Worse, even if the table is relatively empty, blocks of occupied cells start forming.
+This effect, known as primary clustering, means that any key that hashes into the cluster
+will require several attempts to resolve the collision, and then it will add to the cluster.
+Although we will not perform the calculations here, it can be shown that the expected
+number of probes using linear probing is roughly 1
+2(1 + 1/(1 −λ)2) for insertions and
+unsuccessful searches, and 1
+2(1 + 1/(1 −λ)) for successful searches. The calculations
+are somewhat involved. It is easy to see from the code that insertions and unsuccessful
+searches require the same number of probes. A moment’s thought suggests that, on average,
+successful searches should take less time than unsuccessful searches.
+The corresponding formulas, if clustering is not a problem, are fairly easy to derive. We
+will assume a very large table and that each probe is independent of the previous probes.
+180
+Chapter 5
+Hashing
+Empty Table
+After 89
+After 18
+After 49
+After 58
+After 69
+0
+49
+49
+49
+1
+58
+58
+2
+69
+3
+4
+5
+6
+7
+8
+18
+18
+18
+18
+9
+89
+89
+89
+89
+89
+Figure 5.11 Hash table with linear probing, after each insertion
+These assumptions are satisfied by a random collision resolution strategy and are reasonable unless λ is very close to 1. First, we derive the expected number of probes in an
+unsuccessful search. This is just the expected number of probes until we find an empty
+cell. Since the fraction of empty cells is 1 −λ, the number of cells we expect to probe is
+1/(1 −λ). The number of probes for a successful search is equal to the number of probes
+required when the particular element was inserted. When an element is inserted, it is done
+as a result of an unsuccessful search. Thus, we can use the cost of an unsuccessful search
+to compute the average cost of a successful search.
+The caveat is that λ changes from 0 to its current value, so that earlier insertions are
+cheaper and should bring the average down. For instance, in the table in Figure 5.11,
+λ = 0.5, but the cost of accessing 18 is determined when 18 is inserted. At that point,
+λ = 0.2. Since 18 was inserted into a relatively empty table, accessing it should be easier
+than accessing a recently inserted element such as 69. We can estimate the average by using
+an integral to calculate the mean value of the insertion time, obtaining
+I(λ) = 1
+λ
+ λ
+0
+1
+1 −xdx = 1
+λ ln
+1
+1 −λ
+These formulas are clearly better than the corresponding formulas for linear probing.
+Clustering is not only a theoretical problem but actually occurs in real implementations.
+Figure 5.12 compares the performance of linear probing (dashed curves) with what would
+be expected from more random collision resolution. Successful searches are indicated by
+an S, and unsuccessful searches and insertions are marked with U and I, respectively.
+If λ = 0.75, then the formula above indicates that 8.5 probes are expected for an
+insertion in linear probing. If λ = 0.9, then 50 probes are expected, which is unreasonable.
+This compares with 4 and 10 probes for the respective load factors if clustering were not
+a problem. We see from these formulas that linear probing can be a bad idea if the table is
+expected to be more than half full. If λ = 0.5, however, only 2.5 probes are required on
+average for insertion, and only 1.5 probes are required, on average, for a successful search.
+5.4
+Hash Tables Without Linked Lists
+181
+0.0
+3.0
+6.0
+9.0
+12.0
+15.0
+.10 .15 .20 .25 .30 .35 .40 .45 .50 .55 .60 .65 .70 .75 .80 .85 .90 .95 
+U,I
+U,I
+S
+S
+Figure 5.12 Number of probes plotted against load factor for linear probing (dashed) and
+random strategy (S is successful search, U is unsuccessful search, and I is insertion)
+Empty Table
+After 89
+After 18
+After 49
+After 58
+After 69
+0
+49
+49
+49
+1
+2
+58
+58
+3
+69
+4
+5
+6
+7
+8
+18
+18
+18
+18
+9
+89
+89
+89
+89
+89
+Figure 5.13 Hash table with quadratic probing, after each insertion
+5.4.2 Quadratic Probing
+Quadratic probing is a collision resolution method that eliminates the primary clustering
+problem of linear probing. Quadratic probing is what you would expect—the collision
+function is quadratic. The popular choice is f(i) = i2. Figure 5.13 shows the resulting hash
+table with this collision function on the same input used in the linear probing example.
+When 49 collides with 89, the next position attempted is one cell away. This cell is
+empty, so 49 is placed there. Next 58 collides at position 8. Then the cell one away is tried,
+182
+Chapter 5
+Hashing
+but another collision occurs. A vacant cell is found at the next cell tried, which is 22 = 4
+away. The key 58 is thus placed in cell 2. The same thing happens for 69.
+For linear probing it is a bad idea to let the hash table get nearly full, because performance degrades. For quadratic probing, the situation is even more drastic: There is no
+guarantee of finding an empty cell once the table gets more than half full, or even before
+the table gets half full if the table size is not prime. This is because at most half of the table
+can be used as alternative locations to resolve collisions.
+Indeed, we prove now that if the table is half empty and the table size is prime, then
+we are always guaranteed to be able to insert a new element.
+Theorem 5.1.
+If quadratic probing is used, and the table size is prime, then a new element can always
+be inserted if the table is at least half empty.
+Proof.
+Let the table size, TableSize, be an (odd) prime greater than 3. We show that the first
+⌈TableSize/2⌉alternative locations (including the initial location h0(x)) are all distinct.
+Two of these locations are h(x)+i2 (mod TableSize) and h(x)+j2 (mod TableSize), where
+0 ≤i, j ≤⌊TableSize/2⌋. Suppose, for the sake of contradiction, that these locations
+are the same, but i ̸= j. Then
+h(x) + i2 = h(x) + j2
+(mod TableSize)
+i2 = j2
+(mod TableSize)
+i2 −j2 = 0
+(mod TableSize)
+(i −j)(i + j) = 0
+(mod TableSize)
+Since TableSize is prime, it follows that either (i −j) or (i + j) is equal to 0 (mod
+TableSize). Since i and j are distinct, the first option is not possible. Since 0 ≤i, j ≤
+⌊TableSize/2⌋, the second option is also impossible. Thus, the first ⌈TableSize/2⌉alternative locations are distinct. If at most ⌊TableSize/2⌋positions are taken, then an empty
+spot can always be found.
+If the table is even one more than half full, the insertion could fail (although this is
+extremely unlikely). Therefore, it is important to keep this in mind. It is also crucial that
+the table size be prime.1 If the table size is not prime, the number of alternative locations
+can be severely reduced. As an example, if the table size were 16, then the only alternative
+locations would be at distances 1, 4, or 9 away.
+Standard deletion cannot be performed in a probing hash table, because the cell might
+have caused a collision to go past it. For instance, if we remove 89, then virtually all the
+remaining contains operations will fail. Thus, probing hash tables require lazy deletion,
+although in this case there really is no laziness implied.
+1 If the table size is a prime of the form 4k + 3, and the quadratic collision resolution strategy F(i) = ±i2 is
+used, then the entire table can be probed. The cost is a slightly more complicated routine.
+5.4
+Hash Tables Without Linked Lists
+183
+The class skeleton required to implement probing hash tables is shown in Figure 5.14.
+Instead of an array of lists, we have an array of hash table entry cells, which are also shown
+in Figure 5.14. Each entry in the array of HashEntry references is either
+1. null.
+2. Not null, and the entry is active (isActive is true).
+3. Not null, and the entry is marked deleted (isActive is false).
+Constructing the table (Figure 5.15) consists of allocating space and then setting each
+HashEntry reference to null.
+contains(x), shown in Figure 5.16 (on page 186), invokes private methods isActive
+and findPos. The private method findPos performs the collision resolution. We ensure in
+the insert routine that the hash table is at least twice as large as the number of elements in
+the table, so quadratic resolution will always work. In the implementation in Figure 5.16,
+elements that are marked as deleted count as being in the table. This can cause problems,
+because the table can get too full prematurely. We shall discuss this item presently.
+Lines 25 through 28 represent the fast way of doing quadratic resolution. From the
+definition of the quadratic resolution function, f(i) = f(i −1) + 2i −1, so the next cell to
+try is a distance from the previous cell tried and this distance increases by 2 on successive
+probes. If the new location is past the array, it can be put back in range by subtracting
+TableSize. This is faster than the obvious method, because it avoids the multiplication and
+division that seem to be required. An important warning: The order of testing at lines 22
+and 23 is important. Don’t switch it!
+The final routine is insertion. As with separate chaining hashing, we do nothing if x is
+already present. It is a simple modification to do something else. Otherwise, we place it at
+the spot suggested by the findPos routine. The code is shown in Figure 5.17 (on page 187).
+If the load factor exceeds 0.5, the table is full and we enlarge the hash table. This is called
+rehashing, and is discussed in Section 5.5.
+Although quadratic probing eliminates primary clustering, elements that hash to the
+same position will probe the same alternative cells. This is known as secondary clustering.
+Secondary clustering is a slight theoretical blemish. Simulation results suggest that it generally causes less than an extra half probe per search. The following technique eliminates
+this, but does so at the cost of computing an extra hash function.
+5.4.3 Double Hashing
+The last collision resolution method we will examine is double hashing. For double hashing, one popular choice is f(i) = i·hash2(x). This formula says that we apply a second hash
+function to x and probe at a distance hash2(x), 2hash2(x), . . . , and so on. A poor choice of
+hash2(x) would be disastrous. For instance, the obvious choice hash2(x) = x mod 9 would
+not help if 99 were inserted into the input in the previous examples. Thus, the function
+must never evaluate to zero. It is also important to make sure all cells can be probed (this
+is not possible in the example below, because the table size is not prime). A function such
+as hash2(x) = R −(x mod R), with R a prime smaller than TableSize, will work well. If we
+choose R = 7, then Figure 5.18 shows the results of inserting the same keys as before.
+184
+Chapter 5
+Hashing
+1
+public class QuadraticProbingHashTable<AnyType>
+2
+{
+3
+public QuadraticProbingHashTable( )
+4
+{ /* Figure 5.15 */ }
+5
+public QuadraticProbingHashTable( int size )
+6
+{ /* Figure 5.15 */ }
+7
+public void makeEmpty( )
+8
+{ /* Figure 5.15 */ }
+9
+10
+public boolean contains( AnyType x )
+11
+{ /* Figure 5.16 */ }
+12
+public void insert( AnyType x )
+13
+{ /* Figure 5.17 */ }
+14
+public void remove( AnyType x )
+15
+{ /* Figure 5.17 */ }
+16
+17
+private static class HashEntry<AnyType>
+18
+{
+19
+public AnyType
+element;
+// the element
+20
+public boolean isActive;
+// false if marked deleted
+21
+22
+public HashEntry( AnyType e )
+23
+{ this( e, true ); }
+24
+25
+public HashEntry( AnyType e, boolean i )
+26
+{ element
+= e; isActive = i; }
+27
+}
+28
+29
+private static final int DEFAULT_TABLE_SIZE = 11;
+30
+31
+private HashEntry<AnyType> [ ] array; // The array of elements
+32
+private int currentSize;
+// The number of occupied cells
+33
+34
+private void allocateArray( int arraySize )
+35
+{ /* Figure 5.15 */ }
+36
+private boolean isActive( int currentPos )
+37
+{ /* Figure 5.16 */ }
+38
+private int findPos( AnyType x )
+39
+{ /* Figure 5.16 */ }
+40
+private void rehash( )
+41
+{ /* Figure 5.22 */ }
+42
+43
+private int myhash( AnyType x )
+44
+{ /* See online code */ }
+45
+private static int nextPrime( int n )
+46
+{ /* See online code */ }
+47
+private static boolean isPrime( int n )
+48
+{ /* See online code */ }
+49
+}
+Figure 5.14 Class skeleton for hash tables using probing strategies, including the nested
+HashEntry class
+5.4
+Hash Tables Without Linked Lists
+185
+1
+/**
+2
+* Construct the hash table.
+3
+*/
+4
+public QuadraticProbingHashTable( )
+5
+{
+6
+this( DEFAULT_TABLE_SIZE );
+7
+}
+8
+9
+/**
+10
+* Construct the hash table.
+11
+* @param size the approximate initial size.
+12
+*/
+13
+public QuadraticProbingHashTable( int size )
+14
+{
+15
+allocateArray( size );
+16
+makeEmpty( );
+17
+}
+18
+19
+/**
+20
+* Make the hash table logically empty.
+21
+*/
+22
+public void makeEmpty( )
+23
+{
+24
+currentSize = 0;
+25
+for( int i = 0; i < array.length; i++ )
+26
+array[ i ] = null;
+27
+}
+28
+29
+/**
+30
+* Internal method to allocate array.
+31
+* @param arraySize the size of the array.
+32
+*/
+33
+private void allocateArray( int arraySize )
+34
+{
+35
+array = new HashEntry[ nextPrime( arraySize ) ];
+36
+}
+Figure 5.15 Routines to initialize hash table
+The first collision occurs when 49 is inserted. hash2(49) = 7−0 = 7, so 49 is inserted
+in position 6. hash2(58) = 7 −2 = 5, so 58 is inserted at location 3. Finally, 69 collides
+and is inserted at a distance hash2(69) = 7 −6 = 1 away. If we tried to insert 60 in
+position 0, we would have a collision. Since hash2(60) = 7 −4 = 3, we would then try
+positions 3, 6, 9, and then 2 until an empty spot is found. It is generally possible to find
+some bad case, but there are not too many here.
+186
+Chapter 5
+Hashing
+1
+/**
+2
+* Find an item in the hash table.
+3
+* @param x the item to search for.
+4
+* @return the matching item.
+5
+*/
+6
+public boolean contains( AnyType x )
+7
+{
+8
+int currentPos = findPos( x );
+9
+return isActive( currentPos );
+10
+}
+11
+12
+/**
+13
+* Method that performs quadratic probing resolution in half-empty table.
+14
+* @param x the item to search for.
+15
+* @return the position where the search terminates.
+16
+*/
+17
+private int findPos( AnyType x )
+18
+{
+19
+int offset = 1;
+20
+int currentPos = myhash( x );
+21
+22
+while( array[ currentPos ] != null &&
+23
+!array[ currentPos ].element.equals( x ) )
+24
+{
+25
+currentPos += offset;
+// Compute ith probe
+26
+offset += 2;
+27
+if( currentPos >= array.length )
+28
+currentPos -= array.length;
+29
+}
+30
+31
+return currentPos;
+32
+}
+33
+34
+/**
+35
+* Return true if currentPos exists and is active.
+36
+* @param currentPos the result of a call to findPos.
+37
+* @return true if currentPos is active.
+38
+*/
+39
+private boolean isActive( int currentPos )
+40
+{
+41
+return array[ currentPos ] != null && array[ currentPos ].isActive;
+42
+}
+Figure 5.16
+contains routine (and private helpers) for hashing with quadratic probing
+5.4
+Hash Tables Without Linked Lists
+187
+1
+/**
+2
+* Insert into the hash table. If the item is
+3
+* already present, do nothing.
+4
+* @param x the item to insert.
+5
+*/
+6
+public void insert( AnyType x )
+7
+{
+8
+// Insert x as active
+9
+int currentPos = findPos( x );
+10
+if( isActive( currentPos ) )
+11
+return;
+12
+13
+array[ currentPos ] = new HashEntry<>( x, true );
+14
+15
+// Rehash; see Section 5.5
+16
+if( ++currentSize > array.length / 2 )
+17
+rehash( );
+18
+}
+19
+20
+/**
+21
+* Remove from the hash table.
+22
+* @param x the item to remove.
+23
+*/
+24
+public void remove( AnyType x )
+25
+{
+26
+int currentPos = findPos( x );
+27
+if( isActive( currentPos ) )
+28
+array[ currentPos ].isActive = false;
+29
+}
+Figure 5.17
+insert routine for hash tables with quadratic probing
+As we have said before, the size of our sample hash table is not prime. We have done
+this for convenience in computing the hash function, but it is worth seeing why it is important to make sure the table size is prime when double hashing is used. If we attempt to
+insert 23 into the table, it would collide with 58. Since hash2(23) = 7 −2 = 5, and the
+table size is 10, we essentially have only one alternative location, and it is already taken.
+Thus, if the table size is not prime, it is possible to run out of alternative locations prematurely. However, if double hashing is correctly implemented, simulations imply that the
+expected number of probes is almost the same as for a random collision resolution strategy. This makes double hashing theoretically interesting. Quadratic probing, however, does
+not require the use of a second hash function and is thus likely to be simpler and faster in
+practice, especially for keys like strings whose hash functions are expensive to compute.
+188
+Chapter 5
+Hashing
+Empty Table
+After 89
+After 18
+After 49
+After 58
+After 69
+0
+69
+1
+2
+3
+58
+58
+4
+5
+6
+49
+49
+49
+7
+8
+18
+18
+18
+18
+9
+89
+89
+89
+89
+89
+Figure 5.18 Hash table with double hashing, after each insertion
+5.5 Rehashing
+If the table gets too full, the running time for the operations will start taking too long
+and insertions might fail for open addressing hashing with quadratic resolution. This can
+happen if there are too many removals intermixed with insertions. A solution, then, is
+to build another table that is about twice as big (with an associated new hash function)
+and scan down the entire original hash table, computing the new hash value for each
+(nondeleted) element and inserting it in the new table.
+As an example, suppose the elements 13, 15, 24, and 6 are inserted into a linear
+probing hash table of size 7. The hash function is h(x) = x mod 7. Suppose linear probing
+is used to resolve collisions. The resulting hash table appears in Figure 5.19.
+If 23 is inserted into the table, the resulting table in Figure 5.20 will be over 70 percent
+full. Because the table is so full, a new table is created. The size of this table is 17, because
+this is the first prime that is twice as large as the old table size. The new hash function is
+then h(x) = x mod 17. The old table is scanned, and elements 6, 15, 23, 24, and 13 are
+inserted into the new table. The resulting table appears in Figure 5.21.
+This entire operation is called rehashing. This is obviously a very expensive operation;
+the running time is O(N), since there are N elements to rehash and the table size is roughly
+2N, but it is actually not all that bad, because it happens very infrequently. In particular,
+there must have been N/2 insertions prior to the last rehash, so it essentially adds a constant cost to each insertion.2 If this data structure is part of the program, the effect is not
+noticeable. On the other hand, if the hashing is performed as part of an interactive system,
+then the unfortunate user whose insertion caused a rehash could see a slowdown.
+Rehashing can be implemented in several ways with quadratic probing. One alternative
+is to rehash as soon as the table is half full. The other extreme is to rehash only when an
+2 This is why the new table is made twice as large as the old table.
+5.6
+Hash Tables in the Standard Library
+189
+6
+15
+24
+13
+0
+1
+2
+3
+4
+5
+6
+Figure 5.19 Hash table with linear probing with input 13, 15, 6, 24
+6
+15
+23
+24
+13
+0
+1
+2
+3
+4
+5
+6
+Figure 5.20 Hash table with linear probing after 23 is inserted
+insertion fails. A third, middle-of-the-road strategy is to rehash when the table reaches a
+certain load factor. Since performance does degrade as the load factor increases, the third
+strategy, implemented with a good cutoff, could be best.
+Rehashing for separate chaining hash tables is similar. Figure 5.22 shows that rehashing
+is simple to implement, and provides an implementation for separate chaining rehashing
+also.
+5.6 Hash Tables in the Standard Library
+The Standard Library includes hash table implementations of Set and Map, namely HashSet
+and HashMap. The items in the HashSet (or the keys in the HashMap) must provide an equals
+and hashCode method, as described earlier in Section 5.3. The HashSet and HashMap are
+currently implemented using separate chaining hashing.
+These classes can be used if it is not important for the entries to be viewable in sorted
+order. For instance, in the word-changing example in Section 4.8, there were three maps:
+190
+Chapter 5
+Hashing
+6
+23
+24
+13
+15
+0
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+Figure 5.21
+Linear probing hash table after rehashing
+1. A map in which the key is a word length, and the value is a collection of all words of
+that word length.
+2. A map in which the key is a representative, and the value is a collection of all words
+with that representative.
+3. A map in which the key is a word, and the value is a collection of all words that differ
+in only one character from that word.
+Because the order in which word lengths are processed does not matter, the first map
+can be a HashMap. Because the representatives are not even needed after the second map is
+built, the second map can be a HashMap. The third map can also be a HashMap, unless we
+want printHighChangeables to alphabetically list the subset of words that can be changed
+into a large number of other words.
+The performance of a HashMap can often be superior to a TreeMap, but it is hard to know
+for sure without writing the code both ways. Thus, in cases where either a HashMap or
+TreeMap is acceptable, it is preferable to declare variables using the interface type Map and
+then change the instantiation from a TreeMap to a HashMap, and perform timing tests.
+5.6
+Hash Tables in the Standard Library
+191
+1
+/**
+2
+* Rehashing for quadratic probing hash table.
+3
+*/
+4
+private void rehash( )
+5
+{
+6
+HashEntry<AnyType> [ ] oldArray = array;
+7
+8
+// Create a new double-sized, empty table
+9
+allocateArray( nextPrime( 2 * oldArray.length ) );
+10
+currentSize = 0;
+11
+12
+// Copy table over
+13
+for( int i = 0; i < oldArray.length; i++ )
+14
+if( oldArray[ i ] != null && oldArray[ i ].isActive )
+15
+insert( oldArray[ i ].element );
+16
+}
+17
+18
+/**
+19
+* Rehashing for separate chaining hash table.
+20
+*/
+21
+private void rehash( )
+22
+{
+23
+List<AnyType> [ ]
+oldLists = theLists;
+24
+25
+// Create new double-sized, empty table
+26
+theLists = new List[ nextPrime( 2 * theLists.length ) ];
+27
+for( int j = 0; j < theLists.length; j++ )
+28
+theLists[ j ] = new LinkedList<>( );
+29
+30
+// Copy table over
+31
+currentSize = 0;
+32
+for( int i = 0; i < oldLists.length; i++ )
+33
+for( AnyType item : oldLists[ i ] )
+34
+insert( item );
+35
+}
+Figure 5.22 Rehashing for both separate chaining and probing hash tables
+In Java, library types that can be reasonably inserted into a HashSet or as keys into
+a HashMap already have equals and hashCode defined. In particular the String class has
+a hashCode that is essentially the code in Figure 5.4 with lines 14–16 removed, and 37
+replaced with 31. Because the expensive part of the hash table operations is computing
+the hashCode, the hashCode method in the String class contains an important optimization:
+Each String object stores internally the value of its hashCode. Initially it is 0, but if hashCode
+is invoked, the value is remembered. Thus if hashCode is computed on the same String
+192
+Chapter 5
+Hashing
+1
+public final class String
+2
+{
+3
+public int hashCode( )
+4
+{
+5
+if( hash != 0 )
+6
+return hash;
+7
+8
+for( int i = 0; i < length( ); i++ )
+9
+hash = hash * 31 + (int) charAt( i );
+10
+return hash;
+11
+}
+12
+13
+private int hash = 0;
+14
+}
+Figure 5.23
+Excerpt of String class hashCode
+object a second time, we can avoid the expensive recomputation. This technique is called
+caching the hash code, and represents another classic time-space tradeoff. Figure 5.23
+shows an implementation of the String class that caches the hash code.
+Caching the hash code works only because Strings are immutable: If the String were
+allowed to change, it would invalidate the hashCode, and the hashCode would have to be
+reset back to 0. Although two String objects with the same state must have their hash
+codes computed independently, there are many situations in which the same String object
+keeps having its hash code queried. One situation where caching the hash code helps
+occurs during rehashing, because all the Strings involved in the rehashing have already
+had their hash codes cached. On the other hand, caching the hash code does not help
+in the representative map for the word changing example. Each of the representatives is
+a different String computed by removing a character from a larger String, and thus each
+individual String has to have its hash code computed separately. However, in the third
+map, caching the hash code does help, because the keys are only Strings that were stored
+in the original array of Strings.
+5.7 Hash Tables with Worst-Case O(1) Access
+The hash tables that we have examined so far all have the property that with reasonable
+load factors, and appropriate hash functions, we can expect O(1) cost on average for insertions, removes, and searching. But what is the expected worst case for a search assuming a
+reasonably well-behaved hash function?
+For separate chaining, assuming a load factor of 1, this is one version of the classic
+balls and bins problem: Given N balls placed randomly (uniformly) in N bins, what is
+the expected number of balls in the most occupied bin? The answer is well known to
+be Θ(log N/ log log N), meaning that on average, we expect some queries to take nearly
+5.7
+Hash Tables with Worst-Case O(1) Access
+193
+logarithmic time. Similar types of bounds are observed (or provable) for the length of the
+longest expected probe sequence in a probing hash table.
+We would like to obtain O(1) worst-case cost. In some applications, such as hardware
+implementations of lookup tables for routers and memory caches, it is especially important
+that the search have a definite (i.e., constant) amount of completion time. Let us assume
+that N is known in advance, so no rehashing is needed. If we are allowed to rearrange items
+as they are inserted, then O(1) worst-case cost is achievable for searches.
+In the remainder of this section we describe the earliest solution to this problem,
+namely perfect hashing, and then two more recent approaches that appear to offer
+promising alternatives to the classic hashing schemes that have been prevalent for
+many years.
+5.7.1 Perfect Hashing
+Suppose, for purposes of simplification, that all N items are known in advance. If a separate
+chaining implementation could guarantee that each list had at most a constant number of
+items, we would be done. We know that as we make more lists, the lists will on average
+be shorter, so theoretically if we have enough lists, then with a reasonably high probability
+we might expect to have no collisions at all!
+But there are two fundamental problems with this approach: First, the number of lists
+might be unreasonably large; second, even with lots of lists, we might still get unlucky.
+The second problem is relatively easy to address in principle. Suppose we choose the
+number of lists to be M (i.e., TableSize is M), which is sufficiently large to guarantee that
+with probability at least 1
+2, there will be no collisions. Then if a collision is detected, we
+simply clear out the table and try again using a different hash function that is independent
+of the first. If we still get a collision, we try a third hash function, and so on. The expected
+number of trials will be at most 2 (since the success probability is 1
+2), and this is all folded
+into the insertion cost. Section 5.8 discusses the crucial issue of how to produce additional
+hash functions.
+So we are left with determining how large M, the number of lists, needs to be.
+Unfortunately, M needs to be quite large; specifically M = (N2). However, if M = N2, we
+can show that the table is collision free with probability at least 1
+2, and this result can be
+used to make a workable modification to our basic approach.
+Theorem 5.2.
+If N balls are placed into M = N2 bins, the probability that no bin has more than one
+ball is less than 1
+2.
+Proof.
+If a pair (i, j) of balls are placed in the same bin, we call that a collision. Let Ci,j be the
+expected number of collisions produced by any two balls (i, j). Clearly the probability
+that any two specified balls collide is 1/M, and thus Ci,j is 1/M, since the number
+of collisions that involve the pair (i, j) is either 0 or 1. Thus the expected number of
+collisions in the entire table is 
+(i,j), i<j Ci,j. Since there are N(N −1)/2 pairs, this sum
+is N(N −1)/(2M) = N(N −1)/(2N2) < 1
+2. Since the expected number of collisions is
+below 1
+2, the probability that there is even one collision must also be below 1
+2.
+194
+Chapter 5
+Hashing
+0
+1
+2
+3
+4
+5
+6
+22 = 4
+7
+8
+9
+22 = 4
+32 = 9
+Figure 5.24
+Perfect hashing table using secondary hash tables
+Of course, using N2 lists is impractical. However, the preceding analysis suggests the following alternative: Use only N bins, but resolve the collisions in each bin by using hash
+tables instead of linked lists. The idea is that because the bins are expected to have only a
+few items each, the hash table that is used for each bin can be quadratic in the bin size.
+Figure 5.24 shows the basic structure. Here, the primary hash table has ten bins. Bins 1, 3,
+5, and 7 are all empty. Bins 0, 4, and 8 have one item, so they are resolved by a secondary
+hash table with one position. Bins 2 and 6 have two items, so they will be resolved into a
+secondary hash table with four (22) positions. And bin 9 has three items, so it is resolved
+into a secondary hash table with nine (32) positions.
+As with the original idea, each secondary hash table will be constructed using a different hash function until it is collision free. The primary hash table can also be constructed
+several times if the number of collisions that are produced is higher than required. This
+scheme is known as perfect hashing. All that remains to be shown is that the total size of
+the secondary hash tables is indeed expected to be linear.
+Theorem 5.3.
+If N items are placed into a primary hash table containing N bins, then the total size of
+the secondary hash tables has expected value at most 2N.
+Proof.
+Using the same logic as in the proof of Theorem 5.2, the expected number of pairwise
+collisions is at most N(N −1)/2N, or (N −1)/2. Let bi be the number of items that
+hash to position i in the primary hash table; observe that b2
+i space is used for this cell
+in the secondary hash table, and that this accounts for bi (bi −1)/2 pairwise collisions,
+which we will call ci. Thus the amount of space used for the ith secondary hash table
+is 2ci + bi. The total space is then 2 ci + bi. The total number of collisions is
+5.7
+Hash Tables with Worst-Case O(1) Access
+195
+(N −1)/2 (from the first sentence of this proof); the total number of items is of course
+N, so we obtain a total secondary space requirement of 2(N −1)/2 + N < 2N.
+Thus the probability that the total secondary space requirement is more than 4N is at
+most 1
+2 (since, otherwise the expected value would be higher than 2N), so we can keep
+choosing hash functions for the primary table until we generate the appropriate secondary
+space requirement. Once that is done, each secondary hash table will itself require only an
+average of two trials to be collision free. After the tables are built, any lookup can be done
+in two probes.
+Perfect hashing works if the items are all known in advance. There are dynamic
+schemes that allow insertions and deletions (dynamic perfect hashing), but instead we
+will investigate two newer alternatives that are relatively easy to code and appear to be
+competitive in practice with the classic hashing algorithms.
+5.7.2 Cuckoo Hashing
+From our previous discussion, we know that in the balls and bins problem, if N
+items are randomly tossed into N bins, the size of the largest bin is expected to be
+Θ(log N/ log log N). Since this bound has been known for a long time, and the problem
+has been well studied by mathematicians, it was surprising when in the mid 1990s, it was
+shown that if, at each toss, two bins were randomly chosen and the item was tossed into the
+more empty bin (at the time), then the size of the largest bin would only be Θ(log log N),
+a significantly lower number. Quickly, a host of potential algorithms and data structures
+arose out of this new concept of the “power of two choices.”
+One of the ideas is cuckoo hashing. In cuckoo hashing, suppose we have N items.
+We maintain two tables each more than half empty, and we have two independent has
+functions that can assign each item to a position in each table. Cuckoo hashing maintains
+the invariant that an item is always stored in one of these two locations.
+As an example, Figure 5.25 shows a potential cuckoo hash table for six items, with
+two tables of size 5 (These tables are too small, but serve well as an example). Based on the
+randomly chosen hash functions, item A can be at either position 0 in Table 1, or position
+2 in Table 2. Item F can be at either position 3 in Table 1, or position 4 in Table 2, and
+so on. Immediately, this implies that a search in a cuckoo hash table requires at most two
+Table 1
+0
+B
+1
+C
+2
+3
+E
+4
+Table 2
+0
+D
+1
+2
+A
+3
+4
+F
+A: 0, 2
+B: 0, 0
+C: 1, 4
+D: 1, 0
+E: 3, 2
+F: 3, 4
+Figure 5.25 Potential cuckoo hash table. Hash functions are shown on the right. For
+these six items, there are only three valid positions in Table 1 and three valid positions in
+Table 2, so it is not clear that this arrangement can easily be found
+196
+Chapter 5
+Hashing
+table accesses, and a remove is trivial, once the item is located (lazy deletion is not needed
+now!).
+But there is an important detail: How is the table built? For instance, in Figure 5.25,
+there are only three available locations in the first table for the six items, and there are
+only three available locations in the second table for the six items. So there are only six
+available locations for these six items, and thus we must find an ideal matching of slots for
+our six items. Clearly if there were a seventh item G with locations 1 for Table 1 and 2 for
+Table 2, it could not be inserted into the table by any algorithm (the seven items would be
+competing for six table locations). One could argue that this means that the table would
+simply be too loaded (G would yield a 0.70 load factor), but at the same time, if the table
+had thousands of items, and were lightly loaded, but we had A, B, C, D, E, F, G with these
+hash positions, it would still be impossible to insert all seven of those items. So it is not at
+all obvious that this scheme can be made to work. The answer in this situation would be to
+pick another hash function, and this can be fine as long as it is unlikely that this situation
+occurs.
+The cuckoo hashing algorithm itself is simple: To insert a new item x, first make sure it
+is not already there. We can then use the first hash function and if the (first) table location
+is empty, the item can be placed. So Figure 5.26 shows the result of inserting A into an
+empty hash table.
+Suppose now we want to insert B, which has hash locations 0 in Table 1 and 0 in
+Table 2. For the remainder of the algorithm we will use (h1, h2) to specify the two locations,
+so B’s locations are given by (0, 0). Table 1 is already occupied in position 0. At this point
+there are two options: One is to look in Table 2. The problem is that position 0 in Table 2
+could also be occupied. It happens that in this case it is not, but the algorithm that the
+standard cuckoo hash table uses does not bother to look. Instead, it preemptively places
+the new item B in Table 1. In order to do so, it must displace A, so A moves to Table 2,
+using its Table 2 hash location, which is position 2. The result is shown in Figure 5.27. It
+is easy to insert C, and this is shown in Figure 5.28.
+Next we want to insert D, with hash locations (1, 0). But the Table 1 location
+(position 1) is already taken. Note also, that the Table 2 location is not already taken,
+but we don’t look there. Instead, we have D replace C, and then C goes into Table 2 at
+position 4, as suggested by its second hash function. The resulting tables are shown in
+Figure 5.29. After this is done, E can be easily inserted. So far, so good, but can we now
+insert F? Figures 5.30 to 5.33 show that this algorithm successfully inserts F, by displacing
+E, then A, and then B.
+Table 1
+0
+A
+1
+2
+3
+4
+Table 2
+0
+1
+2
+3
+4
+A: 0, 2
+Figure 5.26
+Cuckoo hash table after insertion of A
+5.7
+Hash Tables with Worst-Case O(1) Access
+197
+Table 1
+0
+B
+1
+2
+3
+4
+Table 2
+0
+1
+2
+A
+3
+4
+A: 0, 2
+B: 0, 0
+Figure 5.27 Cuckoo hash table after insertion of B
+Table 1
+0
+B
+1
+C
+2
+3
+4
+Table 2
+0
+1
+2
+A
+3
+4
+A: 0, 2
+B: 0, 0
+C: 1, 4
+Figure 5.28 Cuckoo hash table after insertion of C
+Table 1
+0
+B
+1
+D
+2
+3
+E
+4
+Table 2
+0
+1
+2
+A
+3
+4
+C
+A: 0, 2
+B: 0, 0
+C: 1, 4
+D: 1, 0
+E: 3, 2
+Figure 5.29 Cuckoo hash table after insertion of D
+Table 1
+0
+B
+1
+D
+2
+3
+F
+4
+Table 2
+0
+1
+2
+A
+3
+4
+C
+A: 0, 2
+B: 0, 0
+C: 1, 4
+D: 1, 0
+E: 3, 2
+F: 3, 4
+Figure 5.30 Cuckoo hash table starting the insertion of F into the table in Figure 5.29.
+First, F displaces E
+Clearly as we mentioned before, we cannot successfully insert G, with hash locations
+(1, 2). If we were to try, we would displace D, then B, then A, E, F, and C, and then C
+would try to go back into Table 1, position 1, displacing G which was placed there at
+the start. This would get us to Figure 5.34. So now G would try its alternate in Table 2
+(location 2) and then displace A, which would displace B, which would displace D, which
+198
+Chapter 5
+Hashing
+Table 1
+0
+B
+1
+D
+2
+3
+F
+4
+Table 2
+0
+1
+2
+E
+3
+4
+C
+A: 0, 2
+B: 0, 0
+C: 1, 4
+D: 1, 0
+E: 3, 2
+F: 3, 4
+Figure 5.31
+Continuing the insertion of F into the table in Figure 5.29. Next, E
+displaces A
+Table 1
+0
+A
+1
+D
+2
+3
+F
+4
+Table 2
+0
+1
+2
+E
+3
+4
+C
+A: 0, 2
+B: 0, 0
+C: 1, 4
+D: 1, 0
+E: 3, 2
+F: 3, 4
+Figure 5.32
+Continuing the insertion of F into the table in Figure 5.29. Next, A
+displaces B
+Table 1
+0
+A
+1
+D
+2
+3
+F
+4
+Table 2
+0
+B
+1
+2
+E
+3
+4
+C
+A: 0, 2
+B: 0, 0
+C: 1, 4
+D: 1, 0
+E: 3, 2
+F: 3, 4
+Figure 5.33
+Completing the insertion of F into the table in Figure 5.29. Miraculously (?),
+B finds an empty position in Table 2
+would displace C, which would displace F, which would displace E, which would now
+displace G from position 2. At this point, G would be in a cycle.
+The central issue then concerns questions such as what is the probability of there being
+a cycle that prevents the insertion from completing, and what is the expected number of
+displacements required for a successful insertion? Fortunately, if the table’s load factor is
+below 0.5, an analysis shows that the probability of a cycle is very low, that the expected
+number of displacements is a small constant, and that it is extremely unlikely that a successful insertion would require more than O(log N) displacements. As such, we can simply
+rebuild the tables with new hash functions after a certain number of displacements are
+detected. More precisely, the probability that a single insertion would require a new set of
+hash functions can be made to be O(1/N2); the new hash functions themselves generate N
+more insertions to rebuild the table, but even so, this means the rebuilding cost is minimal.
+5.7
+Hash Tables with Worst-Case O(1) Access
+199
+Table 1
+0
+B
+1
+C
+2
+3
+E
+4
+Table 2
+0
+D
+1
+2
+A
+3
+4
+F
+A: 0, 2
+B: 0, 0
+C: 1, 4
+D: 1, 0
+E: 3, 2
+F: 3, 4
+G: 1, 2
+Figure 5.34 Inserting G into the table in Figure 5.33. G displaces D, which displaces B,
+which displaces A, which displaces E, which displaces F, which displaces C, which displaces G. It is not yet hopeless since when G is displaced, we would now try the other hash
+table, at position 2. However, while that could be successful in general, in this case there
+is a cycle and the insertion will not terminate
+1 item per cell
+2 items per cell
+4 items per cell
+2 hash functions
+0.49
+0.86
+0.93
+3 hash functions
+0.91
+0.97
+0.98
+4 hash functions
+0.97
+0.99
+0.999
+Figure 5.35 Maximum load factors for cuckoo hashing variations
+However, if the table’s load factor is at 0.5 or higher, then the probability of a cycle becomes
+drastically higher, and this scheme is unlikely to work well at all.
+After the publication of cuckoo hashing, numerous extensions were proposed. For
+instance, instead of two tables, we can use a higher number of tables, such as 3 or 4.
+While this increases the cost of a lookup, it also drastically increases the theoretical space
+utilization. In some applications the lookups through separate hash functions can be done
+in parallel and thus cost little to no additional time. Another extension is to allow each table
+to store multiple keys; again this can increase space utilization and also make it easier to
+do insertions and can be more cache-friendly. Various combinations are possible, as shown
+in Figure 5.35. And finally, often cuckoo hash tables are implemented as one giant table
+with two (or more) hash functions that probe the entire table, and some variations attempt
+to place an item in the second hash table immediately if there is an available spot, rather
+than starting a sequence of displacements.
+Cuckoo Hash Table Implementation
+Implementing cuckoo hashing requires a collection of hash functions; simply using
+hashCode to generate the collection of hash functions makes no sense, since any hashCode
+collisions will result in collisions in all the hash functions. Figure 5.36 shows a simple
+interface that can be used to send families of hash functions to the cuckoo hash table.
+Figure 5.37 provides the class skeleton for cuckoo hashing. We will code a variant that will allow an arbitrary number of hash functions (specified by the HashFamily
+object that constructs the hash table) which uses a single array that is addressed by all the
+200
+Chapter 5
+Hashing
+1
+public interface HashFamily<AnyType>
+2
+{
+3
+int hash( AnyType x, int which );
+4
+int getNumberOfFunctions( );
+5
+void generateNewFunctions( );
+6
+}
+Figure 5.36
+Generic HashFamily interface for cuckoo hashing
+hash functions. Thus our implementation differs from the classic notion of two separately
+addressable hash tables. We can implement the classic version by making relatively minor
+changes to the code; however, this version provided in this section seems to perform better
+in tests using simple hash functions.
+In Figure 5.37, we specify that the maximum load for the table is 0.4; if the load
+factor of the table is about to exceed this limit, an automatic table expansion is performed.
+We also define ALLOWED_REHASHES, which specifies how many rehashes we will perform if
+evictions take too long. In theory, ALLOWED_REHASHES can be infinite, since we expect only
+a small constant number of rehashes are needed; in practice, depending on several factors
+such as the number of hash functions, the quality of the hash functions, and the load factor,
+the rehashes could significantly slow things down, and it might be worthwhile to expand
+the table, even though this will cost space. The data representation for the cuckoo hash
+table is straightforward: We store a simple array, the current size, and the collections of
+hash functions, represented in a HashFamily instance. We also maintain the number of hash
+functions, even though that is always obtainable from the HashFamily instance.
+Figure 5.38 shows the constructor and doClear methods, and these are straightforward. Figure 5.39 shows a pair of private methods. The first, myHash, is used to select the
+appropriate hash function and then scale it into a valid array index. The second, findPos,
+consults all the hash functions to return the index containing item x, or −1 if x is not
+found. findPos is then used by contains and remove in Figures 5.40 and 5.41, respectively,
+and we can see that those methods are easy to implement.
+The difficult routine is insertion. In Figure 5.42, we can see that the basic plan is to
+check to see if the item is already present, returning if so. Otherwise, we check to see if the
+table is fully loaded, and if so, we expand it. Finally we call a helper routine to do all the
+dirty work.
+The helper routine for insertion is shown in Figure 5.43. We declare a variable rehashes
+to keep track of how many attempts have been made to rehash in this insertion. Our
+insertion routine is mutually recursive: If needed, insert eventually calls rehash, which
+eventually calls back into insert. Thus rehashes is declared in an outer scope for code
+simplicity.
+Our basic logic is different from the classic scheme. We have already tested that the
+item to insert is not already present. At lines 15–25, we check to see if any of the valid
+1
+public class CuckooHashTable<AnyType>
+2
+{
+3
+public CuckooHashTable( HashFamily<? super AnyType> hf )
+4
+{ /* Figure 5.38 */ }
+5
+public CuckooHashTable( HashFamily<? super AnyType> hf, int size );
+6
+{ /* Figure 5.38 */ }
+7
+8
+public void makeEmpty( )
+9
+{ doClear( ); }
+10
+11
+public boolean contains( AnyType x )
+12
+{ /* Figure 5.40 */ }
+13
+14
+private int myhash( AnyType x, int which )
+15
+{ /* Figure 5.39 */ }
+16
+17
+private int findPos( AnyType x )
+18
+{ /* Figure 5.39 */ }
+19
+20
+public boolean remove( AnyType x )
+21
+{ /* Figure 5.41 */ }
+22
+23
+public boolean insert( AnyType x )
+24
+{ /* Figure 5.42 */ }
+25
+26
+private void expand( )
+27
+{ /* Figure 5.44 */ }
+28
+29
+private void rehash( )
+30
+{ /* Figure 5.44 */ }
+31
+32
+private void doClear( )
+33
+{ /* Figure 5.38 */ }
+34
+35
+private void allocateArray( int arraySize )
+36
+{ array = (AnyType[]) new Object[ arraySize ]; }
+37
+38
+private static final double MAX_LOAD = 0.4;
+39
+private static final int ALLOWED_REHASHES = 1;
+40
+private static final int DEFAULT_TABLE_SIZE = 101;
+41
+42
+private final HashFamily<? super AnyType> hashFunctions;
+43
+private final int numHashFunctions;
+44
+private AnyType [ ] array;
+45
+private int currentSize;
+46
+}
+Figure 5.37 Class skeleton for cuckoo hashing
+202
+Chapter 5
+Hashing
+1
+/**
+2
+* Construct the hash table.
+3
+* @param hf the hash family
+4
+*/
+5
+public CuckooHashTable( HashFamily<? super AnyType> hf )
+6
+{
+7
+this( hf, DEFAULT_TABLE_SIZE );
+8
+}
+9
+10
+/**
+11
+* Construct the hash table.
+12
+* @param hf the hash family
+13
+* @param size the approximate initial size.
+14
+*/
+15
+public CuckooHashTable( HashFamily<? super AnyType> hf, int size )
+16
+{
+17
+allocateArray( nextPrime( size ) );
+18
+doClear( );
+19
+hashFunctions = hf;
+20
+numHashFunctions = hf.getNumberOfFunctions( );
+21
+}
+22
+23
+private void doClear( )
+24
+{
+25
+currentSize = 0;
+26
+for( int i = 0; i < array.length; i++ )
+27
+array[ i ] = null;
+28
+}
+Figure 5.38
+Routines to initialize the cuckoo hash table
+positions are empty; if so, we place our item in the first available position and we are done.
+Otherwise, we evict one of the existing items. However, there are some tricky issues:
+r Evicting the first item did not perform well in experiments.
+r Evicting the last item did not perform well in experiments.
+r Evicting the items in sequence (i.e., the first eviction uses hash function 0, the next
+uses hash function 1, etc.) did not perform well in experiments.
+r Evicting the item purely randomly did not perform well in experiments: In particular,
+with only two hash functions, it tended to create cycles.
+To alleviate the last problem, we maintain the last position that was evicted and if our
+random item was the last evicted item, we select a new random item. This will loop forever
+if used with two hash functions, and both hash functions happen to probe to the same
+5.7
+Hash Tables with Worst-Case O(1) Access
+203
+1
+/**
+2
+* Compute the hash code for x using specified hash function
+3
+* @param x the item
+4
+* @param which the hash function
+5
+* @return the hash code
+6
+*/
+7
+private int myhash( AnyType x, int which )
+8
+{
+9
+int hashVal = hashFunctions.hash( x, which );
+10
+11
+hashVal %= array.length;
+12
+if( hashVal < 0 )
+13
+hashVal += array.length;
+14
+15
+return hashVal;
+16
+}
+17
+18
+/**
+19
+* Method that searches all hash function places.
+20
+* @param x the item to search for.
+21
+* @return the position where the search terminates, or -1 if not found.
+22
+*/
+23
+private int findPos( AnyType x )
+24
+{
+25
+for( int i = 0; i < numHashFunctions; i++ )
+26
+{
+27
+int pos = myhash( x, i );
+28
+if( array[ pos ] != null && array[ pos ].equals( x ) )
+29
+return pos;
+30
+}
+31
+32
+return -1;
+33
+}
+Figure 5.39 Routines to find the location of an item in the cuckoo hash table and to
+compute the hash code for a given table
+location, and that location was a prior eviction, so we limit the loop to five iterations
+(deliberately using an odd number).
+The code for expand and rehash is shown in Figure 5.44. expand creates a larger array but
+keeps the same hash functions. The zero-parameter rehash leaves the array size unchanged
+but creates a new array that is populated with newly chosen hash functions.
+Finally, Figure 5.45 shows the StringHashFamily class that provides a set of simple
+hash functions for strings. These hash functions replace the constant 37 in Figure 5.4 with
+randomly chosen numbers (not necessarily prime).
+204
+Chapter 5
+Hashing
+1
+/**
+2
+* Find an item in the hash table.
+3
+* @param x the item to search for.
+4
+* @return true if item is found.
+5
+*/
+6
+public boolean contains( AnyType x )
+7
+{
+8
+return findPos( x ) != -1;
+9
+}
+Figure 5.40
+Routine to search a cuckoo hash table
+1
+/**
+2
+* Remove from the hash table.
+3
+* @param x the item to remove.
+4
+* @return true if item was found and removed
+5
+*/
+6
+public boolean remove( AnyType x )
+7
+{
+8
+int pos = findPos( x );
+9
+10
+if( pos != -1 )
+11
+{
+12
+array[ pos ] = null;
+13
+currentSize--;
+14
+}
+15
+16
+return pos != -1;
+17
+}
+Figure 5.41 Routine to remove from a cuckoo hash table
+The benefits of cuckoo hashing include the worst-case constant lookup and deletion
+times, the avoidance of lazy deletion and extra data, and the potential for parallelism.
+However, cuckoo hashing is extremely sensitive to the choice of hash functions; the inventors of the cuckoo hash table reported that many of the standard hash functions that they
+attempted performed poorly in tests. Furthermore, although the insertion time is expected
+to be constant time as long as the load factor is below 1
+2, the bound that has been shown
+for the expected insertion cost for classic cuckoo hashing with two separate tables (both
+with load factor λ) is roughly 1/(1 −(4 λ2)1/3), which deteriorates rapidly as the load factor gets close to 1
+2 (the formula itself makes no sense when λ equals or exceeds 1
+2). Using
+lower load factors or more than two hash functions seems like a reasonable alternative.
+5.7
+Hash Tables with Worst-Case O(1) Access
+205
+1
+/**
+2
+* Insert into the hash table. If the item is
+3
+* already present, return false.
+4
+* @param x the item to insert.
+5
+*/
+6
+public boolean insert( AnyType x )
+7
+{
+8
+if( contains( x ) )
+9
+return false;
+10
+11
+if( currentSize >= array.length * MAX_LOAD )
+12
+expand( );
+13
+14
+return insertHelper1( x );
+15
+}
+Figure 5.42 Public insert routine for cuckoo hashing
+5.7.3 Hopscotch Hashing
+Hopscotch hashing is a new algorithm that tries to improve on the classic linear probing
+algorithm. Recall that in linear probing, cells are tried in sequential order, starting from the
+hash location. Because of primary and secondary clustering, this sequence can be long on
+average as the table gets loaded, and thus many improvements such as quadratic probing,
+double hashing, and so forth, have been proposed to reduce the number of collisions.
+However, on some modern architectures, the locality produced by probing adjacent cells
+is a more significant factor than the extra probes, and linear probing can still be practical
+or even a best choice.
+The idea of hopscotch hashing is to bound the maximal length of the probe sequence
+by a predetermined constant that is optimized to the underlying computer’s architecture.
+Doing so would give constant-time lookups in the worst case, and like cuckoo hashing, the
+lookup could be parallelized to simultaneously check the bounded set of possible locations.
+If an insertion would place a new item too far from its hash location, then we efficiently go backward toward the hash location, evicting potential items. If we are careful,
+the evictions can be done quickly and guarantee that those evicted are not placed too far
+from their hash locations. The algorithm is deterministic in that given a hash function,
+either the items can be evicted or they can’t. The latter case implies that the table is likely
+too crowded, and a rehash is in order; but this would happen only at extremely high load
+factors, exceeding 0.9. For a table with a load factor of 1
+2, the failure probability is almost
+zero (Exercise 5.23).
+Let MAX_DIST be the chosen bound on the maximum probe sequence. This means
+that item x must be found somewhere in the MAX_DIST positions listed in hash(x),
+hash(x) + 1, . . . , hash(x) + (MAX_DIST −1). In order to efficiently process evictions,
+we maintain information that tells for each position x, whether the item in the alternate
+position is occupied by an element that hashes to position x.
+1
+private int rehashes = 0;
+2
+private Random r = new Random( );
+3
+4
+private boolean insertHelper1( AnyType x )
+5
+{
+6
+final int COUNT_LIMIT = 100;
+7
+8
+while( true )
+9
+{
+10
+int lastPos = -1;
+11
+int pos;
+12
+13
+for( int count = 0; count < COUNT_LIMIT; count++ )
+14
+{
+15
+for( int i = 0; i < numHashFunctions; i++ )
+16
+{
+17
+pos = myhash( x, i );
+18
+19
+if( array[ pos ] == null )
+20
+{
+21
+array[ pos ] = x;
+22
+currentSize++;
+23
+return true;
+24
+}
+25
+}
+26
+27
+// none of the spots are available. Evict out a random one
+28
+int i = 0;
+29
+do
+30
+{
+31
+pos = myhash( x, r.nextInt( numHashFunctions ) ) ;
+32
+} while( pos == lastPos && i++ < 5 );
+33
+34
+AnyType tmp = array[ lastPos = pos ];
+35
+array[ pos ] = x;
+36
+x = tmp;
+37
+}
+38
+39
+if( ++rehashes > ALLOWED_REHASHES )
+40
+{
+41
+expand( );
+// Make the table bigger
+42
+rehashes = 0;
+// Reset the # of rehashes
+43
+}
+44
+else
+45
+rehash( );
+// Same table size, new hash functions
+46
+}
+47
+}
+Figure 5.43
+Insertion routine for cuckoo hashing uses a different algorithm that chooses
+the item to evict randomly, attempting not to re-evict the last item. The table will attempt
+to select new hash functions (rehash) if there are too many evictions and will expand if
+there are too many rehashes
+5.7
+Hash Tables with Worst-Case O(1) Access
+207
+1
+private void expand( )
+2
+{
+3
+rehash( (int) ( array.length / MAX_LOAD ) );
+4
+}
+5
+6
+private void rehash( )
+7
+{
+8
+hashFunctions.generateNewFunctions( );
+9
+rehash( array.length );
+10
+}
+11
+12
+private void rehash( int newLength )
+13
+{
+14
+AnyType [ ] oldArray = array;
+15
+allocateArray( nextPrime( newLength ) );
+16
+currentSize = 0;
+17
+18
+// Copy table over
+19
+for( AnyType str : oldArray )
+20
+if( str != null )
+21
+insert( str );
+22
+}
+Figure 5.44 Rehashing and expanding code for cuckoo hash tables
+As an example, Figure 5.46 shows a fairly crowded hopscotch hash table, using
+MAX_DIST = 4. The bit array for position 6 shows that only position 6 has an item
+(C) with hash value 6: Only the first bit of Hop[6] is set. Hop[7] has the first two bits
+set, indicating that positions 7 and 8 (A and D) are occupied with items whose hash value
+is 7. And Hop[8] has only the third bit set, indicating that the item in position 10 (E) has
+hash value 8. If MAX_DIST is no more than 32, the Hop array is essentially an array of
+32-bit integers, so the additional space requirement is not substantial. If Hop[pos] contains
+all 1’s for some pos, then an attempt to insert an item whose hash value is pos will clearly
+fail, since there would now be MAX_DIST + 1 items trying to reside within MAX_DIST
+positions of pos—an impossibility.
+Continuing the example, suppose we now insert item H with hash value 9. Our normal
+linear probing would try to place it in position 13, but that is too far from the hash value
+of 9. So instead, we look to evict an item and relocate it to position 13. The only candidates
+to go into position 13 would be items with hash value of 10, 11, 12, or 13. If we examine
+Hop[10], we see that there are no candidates with hash value 10. But Hop[11] produces a
+candidate, G, with value 11 that can be placed into position 13. Since position 11 is now
+close enough to the hash value of H, we can now insert H. These steps, along with the
+changes to the Hop information, are shown in Figure 5.47.
+Finally, we will attempt to insert I whose hash value is 6. Linear probing suggests
+position 14, but of course that is too far away. Thus we look for in Hop[11], and it tells
+208
+Chapter 5
+Hashing
+1
+public class StringHashFamily implements HashFamily<String>
+2
+{
+3
+private final int [ ] MULTIPLIERS;
+4
+private final java.util.Random r = new java.util.Random( );
+5
+6
+public StringHashFamily( int d )
+7
+{
+8
+MULTIPLIERS = new int[ d ];
+9
+generateNewFunctions( );
+10
+}
+11
+12
+public int getNumberOfFunctions( )
+13
+{
+14
+return MULTIPLIERS.length;
+15
+}
+16
+17
+public void generateNewFunctions( )
+18
+{
+19
+for( int i = 0; i < MULTIPLIERS.length; i++ )
+20
+MULTIPLIERS[ i ] = r.nextInt( );
+21
+}
+22
+23
+public int hash( String x, int which )
+24
+{
+25
+final int multiplier = MULTIPLIERS[ which ];
+26
+int hashVal = 0;
+27
+28
+for( int i = 0; i < x.length( ); i++ )
+29
+hashVal = multiplier * hashVal + x.charAt( i );
+30
+31
+return hashVal;
+32
+}
+33
+}
+Figure 5.45
+Casual string hashing for cuckoo hashing; these hash functions do not provably satisfy the requirements needed for cuckoo hashing but offer decent performance if
+the table is not highly loaded and the alternate insertion routine in Figure 5.43 is used
+us that G can move down, freeing up position 13. Now that 13 is vacant, we can look
+in Hop[10] to find another element to evict. But Hop[10] has all zeros in the first three
+positions, so there are no items with hash value 10 that can be moved. So we examine
+Hop[11]. There we find all zeros in the first two positions.
+So we try Hop[12], where we need the first position to be 1, which it is. Thus F can
+move down. These two steps are shown in Figure 5.48. Notice, that if this were not the
+case—for instance if hash(F) were 9 instead of 12—we would be stuck and have to rehash.
+5.7
+Hash Tables with Worst-Case O(1) Access
+209
+Item
+Hop
+. . .
+6
+C
+1000
+7
+A
+1100
+8
+D
+0010
+9
+B
+1000
+10
+E
+0000
+11
+G
+1000
+12
+F
+1000
+13
+0000
+14
+0000
+. . .
+A: 7
+B: 9
+C: 6
+D: 7
+E: 8
+F: 12
+G: 11
+Figure 5.46 Hopscotch hashing table. The hops tell which of the positions in the block
+are occupied with cells containing this hash value. Thus Hop[8] = 0010 indicates that
+only position 10 currently contains items whose hash value is 8, while positions 8, 9, and
+11 do not
+Item
+Hop
+. . .
+6
+C
+1000
+7
+A
+1100
+8
+D
+0010
+9
+B
+1000
+10
+E
+0000
+11
+G
+1000
+12
+F
+1000
+13
+0000
+14
+0000
+. . .
+→
+Item
+Hop
+. . .
+6
+C
+1000
+7
+A
+1100
+8
+D
+0010
+9
+B
+1000
+10
+E
+0000
+11
+0010
+12
+F
+1000
+13
+G
+0000
+14
+0000
+. . .
+→
+Item
+Hop
+. . .
+6
+C
+1000
+7
+A
+1100
+8
+D
+0010
+9
+B
+1010
+10
+E
+0000
+11
+H
+0010
+12
+F
+1000
+13
+G
+0000
+14
+0000
+. . .
+A: 7
+B: 9
+C: 6
+D: 7
+E: 8
+F: 12
+G: 11
+H: 9
+Figure 5.47 Hopscotch hashing table. Attempting to insert H. Linear probing suggests
+location 13, but that is too far, so we evict G from position 11 to find a closer position
+However, that is not a problem with our algorithm; instead there would simply be no way
+to place all of C, I, A, D, E, B, H, and F (if F’s hash value were 9); these items would all have
+hash values between 6 and 9, and would thus need to be placed in the seven spots between
+6 and 12. But that would be eight items in seven spots—an impossibility. However, since
+this is not the case for our example, and we have evicted an item from position 12, we
+can now continue, and Figure 5.49 shows the remaining eviction from position 9, and
+subsequent placement of I.
+210
+Chapter 5
+Hashing
+Item
+Hop
+. . .
+6
+C
+1000
+7
+A
+1100
+8
+D
+0010
+9
+B
+1010
+10
+E
+0000
+11
+H
+0010
+12
+F
+1000
+13
+G
+0000
+14
+0000
+. . .
+→
+Item
+Hop
+. . .
+6
+C
+1000
+7
+A
+1100
+8
+D
+0010
+9
+B
+1010
+10
+E
+0000
+11
+H
+0001
+12
+F
+1000
+13
+0000
+14
+G
+0000
+. . .
+→
+Item
+Hop
+. . .
+6
+C
+1000
+7
+A
+1100
+8
+D
+0010
+9
+B
+1010
+10
+E
+0000
+11
+H
+0001
+12
+0100
+13
+F
+0000
+14
+G
+0000
+. . .
+A: 7
+B: 9
+C: 6
+D: 7
+E: 8
+F: 12
+G: 11
+H: 9
+I: 6
+Figure 5.48
+Hopscotch hashing table. Attempting to insert I. Linear probing suggests
+location 14, but that is too far; consulting Hop[11], we see that G can move down, leaving
+position 13 open. Consulting Hop[10] gives no suggestions. Hop[11] does not help either
+(why?), so Hop[12] suggests moving F
+Item
+Hop
+. . .
+6
+C
+1000
+7
+A
+1100
+8
+D
+0010
+9
+B
+1010
+10
+E
+0000
+11
+H
+0001
+12
+0100
+13
+F
+0000
+14
+G
+0000
+. . .
+→
+Item
+Hop
+. . .
+6
+C
+1000
+7
+A
+1100
+8
+D
+0010
+9
+0011
+10
+E
+0000
+11
+H
+0001
+12
+B
+0100
+13
+F
+0000
+14
+G
+0000
+. . .
+→
+Item
+Hop
+. . .
+6
+C
+1001
+7
+A
+1100
+8
+D
+0010
+9
+I
+0011
+10
+E
+0000
+11
+H
+0001
+12
+B
+0100
+13
+F
+0000
+14
+G
+0000
+. . .
+A: 7
+B: 9
+C: 6
+D: 7
+E: 8
+F: 12
+G: 11
+H: 9
+I: 6
+Figure 5.49
+Hopscotch hashing table. Insertion of I continues: Next B is evicted, and
+finally we have a spot that is close enough to the hash value and can insert I
+Hopscotch hashing is a relatively new algorithm, but the initial experimental results are
+very promising, especially for applications that make use of multiple processors and require
+significant parallelism and concurrency. It remains to be seen if either cuckoo hashing or
+hopscotch hashing emerge as a practical alternative to the classic separate chaining and
+linear/quadratic probing schemes.
+5.8
+Universal Hashing
+211
+5.8 Universal Hashing
+Although hash tables are very efficient and have average cost per operation, assuming
+appropriate load factors, their analysis and performance depend on the hash function
+having two fundamental properties:
+1. The hash function must be computable in constant time (i.e., independent of the
+number of items in the hash table).
+2. The hash function must distribute its items uniformly among the array slots.
+In particular, if the hash function is poor, then all bets are off, and the cost per operation
+can be linear. In this section, we discuss universal hash functions, which allow us to
+choose the hash function randomly in such a way that condition 2 above is satisfied. As
+in Section 5.7, we use M to represent Tablesize. Although a strong motivation for the use
+of universal hash functions is to provide theoretical justification for the assumptions used
+in the classic hash table analyses, these functions can also be used in applications that
+require a high level of robustness, in which worst-case (or even substantially degraded)
+performance, perhaps based on inputs generated by a saboteur or hacker, simply cannot
+be tolerated.
+As in Section 5.7, we use M to represent TableSize.
+Definition 5.1.
+A family H of hash functions is universal, if for any x ̸= y, the number of hash functions
+h in H for which h(x) = h(y) is at most |H|/M.
+Notice that this definition holds for each pair of items, rather than being averaged over
+all pairs of items. The definition above means that if we choose a hash function randomly
+from a universal family H, then the probability of a collision between any two distinct items
+is at most 1/M, and when adding into a table with N items, the probability of a collision at
+the initial point is at most N/M, or the load factor.
+The use of a universal hash function for separate chaining or hopscotch hashing would
+be sufficient to meet the assumptions used in the analysis of those data structures. However,
+it is not sufficient for cuckoo hashing, which requires a stronger notion of independence.
+In cuckoo hashing, we first see if there is a vacant location; if there is not, and we do an
+eviction, a different item is now involved in looking for a vacant location. This repeats
+until we find the vacant location, or decide to rehash [generally within O(log N) steps].
+In order for the analysis to work, each step must have a collision probability of N/M
+independently, with a different item x being subject to the hash function. We can formalize
+this independence requirement in the following definition.
+212
+Chapter 5
+Hashing
+Definition 5.2.
+A family H of hash functions is k-universal, if for any x1 ̸= y1, x2 ̸= y2, . . . , xk ̸= yk,
+the number of hash functions h in H for which h(x1) = h(y1), h(x2) = h(y2), . . ., and
+h(xk) = h(yk) is at most |H|/Mk.
+With this definition, we see that the analysis of cuckoo hashing requires an O(log N)universal hash function (after that many evictions, we give up and rehash). In this section
+we look only at universal hash functions.
+To design a simple universal hash function, we will assume first that we are mapping
+very large integers into smaller integers ranging from 0 to M −1. Let p be a prime larger
+than the largest input key.
+Our universal family H will consist of the following set of functions, where a and b are
+chosen randomly:
+H = {Ha,b(x) = ((ax + b) mod p) mod M, where 1 ≤a ≤p −1, 0 ≤b ≤p −1}
+For example, in this family, three of the possible random choices of (a, b) yield three
+different hash functions:
+H3,7(x) = ((3x + 7) mod p) mod M
+H4,1(x) = ((4x + 1) mod p) mod M
+H8,0(x) = ((8x) mod p) mod M
+Observe that there are p(p −1) possible hash functions that can be chosen.
+Theorem 5.4.
+The hash family H = {Ha,b(x) = ((ax + b) mod p) mod M, where 1 ≤a ≤p −1,
+0 ≤b ≤p −1} is universal.
+Proof.
+Let x and y be distinct values, with x > y, such that Ha,b(x) = Ha,b(y).
+Clearly if (ax + b) mod p is equal to (ay + b) mod p, then we will have a collision.
+However, this cannot happen: Subtracting equations yields a(x −y) ≡0 (mod p),
+which would mean that p divides a or p divides x −y, since p is prime. But neither can
+happen, since both a and x −y are between 1 and p −1.
+So let r = (ax + b) mod p and let s = (ay + b) mod p, and by the above argument,
+r ̸= s. Thus there are p possible values for r, and for each r, there are p −1 possible
+values for s, for a total of p(p −1) possible (r, s) pairs. Notice that the number of (a, b)
+pairs and the number of (r, s) pairs is identical; thus each (r, s) pair will correspond
+to exactly one (a, b) pair if we can solve for (a, b) in terms of r and s. But that is easy:
+As before, subtracting equations yields a(x −y) ≡(r −s) (mod p), which means that
+by multiplying both sides by the unique multiplicative inverse of (x −y) (which must
+exist, since x −y is not zero and p is prime), we obtain a, in terms of r and s. Then b
+follows.
+Finally, this means that the probability that x and y collide is equal to the probability that r ≡s (mod M), and the above analysis allows us to assume that r and s are
+chosen randomly, rather than a and b. Immediate intuition would place this probability
+at 1/M, but that would only be true if p were an exact multiple of M, and all possible
+5.8
+Universal Hashing
+213
+(r, s) pairs were equally likely. Since p is prime, and r ̸= s, that is not exactly true, so a
+more careful analysis is needed.
+For a given r, the number of values of s that can collide mod M is at most ⌈p/M⌉−1
+(the −1 is because r ̸= s). It is easy to see that this is at most (p −1)/M. Thus the
+probability that r and s will generate a collision is at most 1/M (we divide by p −1,
+because as mentioned earlier in the proof, there are only p −1 choices for s given r).
+This implies that the hash family is universal.
+Implementation of this hash function would seem to require two mod operations:
+one mod p and the second mod M. Figure 5.50 shows a simple implementation in Java,
+assuming that M is significantly less than the 231 −1 limit of a Java integer. Because the
+computations must now be exactly as specified, and thus overflow is no longer acceptable,
+we promote to 64-bit long computations.
+However, we are allowed to choose any prime p, as long as it is larger than M. Hence, it
+makes sense to choose a prime that is most favorable for computations. One such prime is
+p = 231 −1. Prime numbers of this form are known as Mersenne primes; other Mersenne
+primes include 25 −1, 261 −1 and 289 −1. Just as a multiplication by a Mersenne prime
+such as 31 can be implemented by a bit shift and a subtract, a mod operation involving a
+Mersenne prime can also be implemented by a bit shift and an addition:
+Suppose r ≡y (mod p). If we divide y by (p + 1), then y = q′(p + 1) + r′, where q′
+and r′ are the quotient and remainder, respectively. Thus, r ≡q′(p + 1) + r′ (mod p).
+And since (p + 1) ≡1 (mod p), we obtain r ≡q′ + r′ (mod p).
+Figure 5.51 implements this idea, which is known as the Carter-Wegman trick. On
+line 8, the bit shift computes the quotient and the bitwise and computes the remainder
+1
+public static int universalHash( int x, int A, int B, int P, int M )
+2
+{
+3
+return (int) ( ( ( (long) A * x ) + B ) % P ) % M;
+4
+}
+Figure 5.50 Simple implementation of universal hashing
+1
+public static final int DIGS = 31;
+2
+public static final int mersennep = (1<<DIGS) - 1;
+3
+4
+public static int universalHash( int x, int A, int B, int M )
+5
+{
+6
+long hashVal = (long) A * x + B;
+7
+8
+hashVal = ( ( hashVal >> DIGS ) + ( hashVal & mersennep ) );
+9
+if( hashVal >= mersennep )
+10
+hashVal -= mersennep;
+11
+12
+return (int) hashVal % M;
+13
+}
+Figure 5.51 Simple implementation of universal hashing
+214
+Chapter 5
+Hashing
+when dividing by (p + 1); these bitwise operations work because (p + 1) is an exact power
+of two. Since the remainder could be almost as large as p, the resulting sum might be larger
+than p, so we scale it back down at lines 9 and 10.
+Universal hash functions exist for strings also. First, choose any prime p, larger than M
+(and larger than the largest character code). Then use our standard string hashing function,
+choosing the multiplier randomly between 1 and p−1 and returning an intermediate hash
+value between 0 and p −1, inclusive. Finally, apply a universal hash function to generate
+the final hash value between 0 and M −1.
+5.9 Extendible Hashing
+Our last topic in this chapter deals with the case where the amount of data is too large to
+fit in main memory. As we saw in Chapter 4, the main consideration then is the number of
+disk accesses required to retrieve data.
+As before, we assume that at any point we have N records to store; the value of N
+changes over time. Furthermore, at most M records fit in one disk block. We will use
+M = 4 in this section.
+If either probing hashing or separate chaining hashing is used, the major problem
+is that collisions could cause several blocks to be examined during a search, even for a
+well-distributed hash table. Furthermore, when the table gets too full, an extremely
+expensive rehashing step must be performed, which requires O(N) disk accesses.
+A clever alternative, known as extendible hashing, allows a search to be performed in
+two disk accesses. Insertions also require few disk accesses.
+We recall from Chapter 4 that a B-tree has depth O(logM/2 N). As M increases, the depth
+of a B-tree decreases. We could in theory choose M to be so large that the depth of the B-tree
+would be 1. Then any search after the first would take one disk access, since, presumably,
+the root node could be stored in main memory. The problem with this strategy is that the
+branching factor is so high that it would take considerable processing to determine which
+leaf the data were in. If the time to perform this step could be reduced, then we would
+have a practical scheme. This is exactly the strategy used by extendible hashing.
+Let us suppose, for the moment, that our data consist of several six-bit integers.
+Figure 5.52 shows an extendible hashing scheme for these data. The root of the “tree”
+contains four links determined by the leading two bits of the data. Each leaf has up to
+M = 4 elements. It happens that in each leaf the first two bits are identical; this is indicated by the number in parentheses. To be more formal, D will represent the number of
+bits used by the root, which is sometimes known as the directory. The number of entries
+in the directory is thus 2D. dL is the number of leading bits that all the elements of some
+leaf L have in common. dL will depend on the particular leaf, and dL ≤D.
+Suppose that we want to insert the key 100100. This would go into the third leaf, but
+as the third leaf is already full, there is no room. We thus split this leaf into two leaves,
+which are now determined by the first three bits. This requires increasing the directory size
+to 3. These changes are reflected in Figure 5.53.
+5.9
+Extendible Hashing
+215
+(2)
+000100
+001000
+001010
+001011
+(2)
+010100
+011000
+(2)
+100000
+101000
+101100
+101110
+(2)
+111000
+111001
+00
+01
+10
+11
+Figure 5.52 Extendible hashing: original data
+(2)
+000100
+001000
+001010
+001011
+(2)
+010100
+011000
+(3)
+100000
+100100
+(3)
+101000
+101100
+101110
+(2)
+111000
+111001
+000
+001
+010
+011
+100
+101
+110
+111
+Figure 5.53 Extendible hashing: after insertion of 100100 and directory split
+Notice that all the leaves not involved in the split are now pointed to by two adjacent
+directory entries. Thus, although an entire directory is rewritten, none of the other leaves
+is actually accessed.
+If the key 000000 is now inserted, then the first leaf is split, generating two leaves with
+dL = 3. Since D = 3, the only change required in the directory is the updating of the 000
+and 001 links. See Figure 5.54.
+216
+Chapter 5
+Hashing
+(3)
+000000
+000100
+(3)
+001000
+001010
+001011
+(2)
+010100
+011000
+(3)
+100000
+100100
+(3)
+101000
+101100
+101110
+(2)
+111000
+111001
+000
+001
+010
+011
+100
+101
+110
+111
+Figure 5.54
+Extendible hashing: after insertion of 000000 and leaf split
+This very simple strategy provides quick access times for insert and search operations
+on large databases. There are a few important details we have not considered.
+First, it is possible that several directory splits will be required if the elements in a leaf
+agree in more than D + 1 leading bits. For instance, starting at the original example, with
+D = 2, if 111010, 111011, and finally 111100 are inserted, the directory size must be
+increased to 4 to distinguish between the five keys. This is an easy detail to take care of,
+but must not be forgotten. Second, there is the possibility of duplicate keys; if there are
+more than M duplicates, then this algorithm does not work at all. In this case, some other
+arrangements need to be made.
+These possibilities suggest that it is important for the bits to be fairly random. This can
+be accomplished by hashing the keys into a reasonably long integer—hence the name.
+We close by mentioning some of the performance properties of extendible hashing,
+which are derived after a very difficult analysis. These results are based on the reasonable
+assumption that the bit patterns are uniformly distributed.
+The expected number of leaves is (N/M) log2 e. Thus the average leaf is ln 2 = 0.69
+full. This is the same as for B-trees, which is not entirely surprising, since for both data
+structures new nodes are created when the (M + 1)th entry is added.
+The more surprising result is that the expected size of the directory (in other words,
+2D) is O(N1+1/M/M). If M is very small, then the directory can get unduly large. In this
+case, we can have the leaves contain links to the records instead of the actual records,
+thus increasing the value of M. This adds a second disk access to each search operation in
+order to maintain a smaller directory. If the directory is too large to fit in main memory, the
+second disk access would be needed anyway.
+Summary
+217
+Summary
+Hash tables can be used to implement the insert and search operations in constant average
+time. It is especially important to pay attention to details such as load factor when using
+hash tables, since otherwise the time bounds are not valid. It is also important to choose
+the hash function carefully when the key is not a short string or integer.
+For separate chaining hashing, the load factor should be close to 1, although performance does not significantly degrade unless the load factor becomes very large. For probing
+hashing, the load factor should not exceed 0.5, unless this is completely unavoidable. If
+linear probing is used, performance degenerates rapidly as the load factor approaches 1.
+Rehashing can be implemented to allow the table to grow (and shrink), thus maintaining
+a reasonable load factor. This is important if space is tight and it is not possible just to
+declare a huge hash table.
+Other alternatives such as cuckoo hashing and hopscotch hashing can also yield good
+results. Because all these algorithms are constant time, it is difficult to make strong statements about which hash table implementation is the “best”; recent simulation results
+provide conflicting guidance and suggest that the performance can depend strongly
+on the types of items being manipulated, the underlying computer hardware, and the
+programming language.
+Binary search trees can also be used to implement insert and contains operations.
+Although the resulting average time bounds are O(log N), binary search trees also support
+routines that require order and are thus more powerful. Using a hash table, it is not possible
+to find the minimum element. It is not possible to search efficiently for a string unless the
+exact string is known. A binary search tree could quickly find all items in a certain range;
+this is not supported by hash tables. Furthermore, the O(log N) bound is not necessarily
+that much more than O(1), especially since no multiplications or divisions are required by
+search trees.
+On the other hand, the worst case for hashing generally results from an implementation
+error, whereas sorted input can make binary trees perform poorly. Balanced search trees are
+quite expensive to implement, so if no ordering information is required and there is any
+suspicion that the input might be sorted, then hashing is the data structure of choice.
+Hashing applications are abundant. Compilers use hash tables to keep track of declared
+variables in source code. The data structure is known as a symbol table. Hash tables are
+the ideal application for this problem. Identifiers are typically short, so the hash function
+can be computed quickly, and alphabetizing the variables is often unnecessary.
+A hash table is useful for any graph theory problem where the nodes have real names
+instead of numbers. Here, as the input is read, vertices are assigned integers from 1 onward
+by order of appearance. Again, the input is likely to have large groups of alphabetized
+entries. For example, the vertices could be computers. Then if one particular installation
+lists its computers as ibm1, ibm2, ibm3, ..., there could be a dramatic effect on efficiency if
+a search tree is used.
+A third common use of hash tables is in programs that play games. As the program
+searches through different lines of play, it keeps track of positions it has seen by computing a hash function based on the position (and storing its move for that position). If the
+same position reoccurs, usually by a simple transposition of moves, the program can avoid
+218
+Chapter 5
+Hashing
+expensive recomputation. This general feature of all game-playing programs is known as
+the transposition table.
+Yet another use of hashing is in online spelling checkers. If misspelling detection (as
+opposed to correction) is important, an entire dictionary can be prehashed and words can
+be checked in constant time. Hash tables are well suited for this, because it is not important
+to alphabetize words; printing out misspellings in the order they occurred in the document
+is certainly acceptable.
+Hash tables are often used to implement caches, both in software (for instance, the
+cache in your Internet browser) and in hardware (for instance, the memory caches in
+modern computers). They are also used in hardware implementations of routers.
+We close this chapter by returning to the word puzzle problem of Chapter 1. If the
+second algorithm described in Chapter 1 is used, and we assume that the maximum word
+size is some small constant, then the time to read in the dictionary containing W words
+and put it in a hash table is O(W). This time is likely to be dominated by the disk I/O and
+not the hashing routines. The rest of the algorithm would test for the presence of a word
+for each ordered quadruple (row, column, orientation, number of characters). As each lookup
+would be O(1), and there are only a constant number of orientations (8) and characters
+per word, the running time of this phase would be O(R · C). The total running time would
+be O(R · C + W), which is a distinct improvement over the original O(R · C · W). We could
+make further optimizations, which would decrease the running time in practice; these are
+described in the exercises.
+Exercises
+5.1
+Given input {4371, 1323, 6173, 4199, 4344, 9679, 1989} and a hash function
+h(x) = x mod 10, show the resulting:
+a. Separate chaining hash table.
+b. Hash table using linear probing.
+c. Hash table using quadratic probing.
+d. Hash table with second hash function h2(x) = 7 −(x mod 7).
+5.2
+Show the result of rehashing the hash tables in Exercise 5.1.
+5.3
+Write a program to compute the number of collisions required in a long random
+sequence of insertions using linear probing, quadratic probing, and double hashing.
+5.4
+A large number of deletions in a separate chaining hash table can cause the table
+to be fairly empty, which wastes space. In this case, we can rehash to a table half
+as large. Assume that we rehash to a larger table when there are twice as many
+elements as the table size. How empty should the table be before we rehash to a
+smaller table?
+5.5
+Reimplement separate chaining hash tables using singly linked lists instead of using
+java.util.LinkedList.
+5.6
+The isEmpty routine for quadratic probing has not been written. Can you implement
+it by returning the expression currentSize==0?
+Exercises
+219
+5.7
+In the quadratic probing hash table, suppose that instead of inserting a new item
+into the location suggested by findPos, we insert it into the first inactive cell on the
+search path (thus, it is possible to reclaim a cell that is marked “deleted,” potentially
+saving space).
+a. Rewrite the insertion algorithm to use this observation. Do this by having findPos maintain, with an additional variable, the location of the first inactive cell it
+encounters.
+b. Explain the circumstances under which the revised algorithm is faster than the
+original algorithm. Can it be slower?
+5.8
+Suppose instead of quadratic probing, we use “cubic probing”; here the ith probe
+is at hash(x) + i3. Does cubic probing improve on quadratic probing?
+5.9
+The hash function in Figure 5.4 makes repeated calls to key.length( ) in the for
+loop. Is it worth computing this once prior to entering the loop?
+5.10
+What are the advantages and disadvantages of the various collision resolution
+strategies?
+5.11
+Suppose that to mitigate the effects of secondary clustering we use as the collision
+resolution function f(i) = i · r(hash(x)), where hash(x) is the 32-bit hash value
+(not yet scaled to a suitable array index), and r(y) = |48271y( mod (231 −1))|
+mod TableSize. (Section 10.4.1 describes a method of performing this calculation
+without overflows, but it is unlikely that overflow matters in this case.) Explain
+why this strategy tends to avoid secondary clustering, and compare this strategy
+with both double hashing and quadratic probing.
+5.12
+Rehashing requires recomputing the hash function for all items in the hash table.
+Since computing the hash function is expensive, suppose objects provide a hash
+member function of their own, and each object stores the result in an additional
+data member the first time the hash function is computed for it. Show how such a
+scheme would apply for the Employee class in Figure 5.8, and explain under what
+circumstances the remembered hash value remains valid in each Employee.
+5.13
+Write a program to implement the following strategy for multiplying two sparse
+polynomials P1, P2 of size M and N, respectively. Each polynomial is represented as
+a linked list of objects consisting of a coefficient and an exponent (Exercise 3.12).
+We multiply each term in P1 by a term in P2 for a total of MN operations. One
+method is to sort these terms and combine like terms, but this requires sorting
+MN records, which could be expensive, especially in small-memory environments.
+Alternatively, we could merge terms as they are computed and then sort the result.
+a. Write a program to implement the alternative strategy.
+b. If the output polynomial has about O(M + N) terms, what is the running time
+of both methods?
+⋆5.14
+Describe a procedure that avoids initializing a hash table (at the expense of
+memory).
+220
+Chapter 5
+Hashing
+5.15
+Suppose we want to find the first occurrence of a string P1P2 · · · Pk in a long input
+string A1A2 · · · AN. We can solve this problem by hashing the pattern string, obtaining a hash value HP, and comparing this value with the hash value formed from
+A1A2 · · · Ak, A2A3 · · · Ak+1, A3A4 · · · Ak+2, and so on until AN−k+1AN−k+2 · · · AN.
+If we have a match of hash values, we compare the strings character by character
+to verify the match. We return the position (in A) if the strings actually do match,
+and we continue in the unlikely event that the match is false.
+⋆a. Show that if the hash value of AiAi+1 · · · Ai+k−1 is known, then the hash value
+of Ai+1Ai+2 · · · Ai+k can be computed in constant time.
+b. Show that the running time is O(k + N) plus the time spent refuting false
+matches.
+⋆c. Show that the expected number of false matches is negligible.
+d. Write a program to implement this algorithm.
+⋆⋆e. Describe an algorithm that runs in O(k + N) worst-case time.
+⋆⋆f. Describe an algorithm that runs in O(N/k) average time.
+5.16
+Java 7 adds syntax that allows a switch statement to work with the String type
+(instead of the primitive integer types). Explain how hash tables can be used by the
+compiler to implement this language addition.
+5.17
+An (old style) BASIC program consists of a series of statements numbered in ascending order. Control is passed by use of a goto or gosub and a statement number. Write
+a program that reads in a legal BASIC program and renumbers the statements so that
+the first starts at number F and each statement has a number D higher than the previous statement. You may assume an upper limit of N statements, but the statement
+numbers in the input might be as large as a 32-bit integer. Your program must run
+in linear time.
+5.18
+a. Implement the word puzzle program using the algorithm described at the end
+of the chapter.
+b. We can get a big speed increase by storing, in addition to each word W, all of
+W’s prefixes. (If one of W’s prefixes is another word in the dictionary, it is stored
+as a real word.) Although this may seem to increase the size of the hash table
+drastically, it does not, because many words have the same prefixes. When a scan
+is performed in a particular direction, if the word that is looked up is not even
+in the hash table as a prefix, then the scan in that direction can be terminated
+early. Use this idea to write an improved program to solve the word puzzle.
+c. If we are willing to sacrifice the sanctity of the hash table ADT, we can speed up
+the program in part (b) by noting that if, for example, we have just computed
+the hash function for “excel,” we do not need to compute the hash function for
+“excels” from scratch. Adjust your hash function so that it can take advantage of
+its previous calculation.
+d. In Chapter 2, we suggested using binary search. Incorporate the idea of using
+prefixes into your binary search algorithm. The modification should be simple.
+Which algorithm is faster?
+Exercises
+221
+1
+class Map<KeyType,ValueType>
+2
+{
+3
+public Map( )
+4
+5
+public void put( KeyType key, ValueType val )
+6
+public ValueType get( KeyType key )
+7
+public boolean isEmpty( )
+8
+public void makeEmpty( )
+9
+10
+private QuadraticProbingHashTable<Entry<KeyType,ValueType>> items;
+11
+12
+private static class Entry<KeyType,ValueType>
+13
+{
+14
+KeyType key;
+15
+ValueType value;
+16
+// Appropriate Constructors, etc.
+17
+}
+18
+}
+Figure 5.55 Map skeleton for Exercise 5.20
+5.19
+Under certain assumptions, the expected cost of an insertion into a hash table with
+secondary clustering is given by 1/(1−λ)−λ−ln(1−λ). Unfortunately, this formula
+is not accurate for quadratic probing. However, assuming that it is, determine the
+following:
+a. The expected cost of an unsuccessful search.
+b. The expected cost of a successful search.
+5.20
+Implement a generic Map that supports the put and get operations. The implementation will store a hash table of pairs (key, definition). Figure 5.55 provides the Map
+specification (minus some details).
+5.21
+Implement a spelling checker by using a hash table. Assume that the dictionary
+comes from two sources: an existing large dictionary and a second file containing
+a personal dictionary. Output all misspelled words and the line numbers in which
+they occur. Also, for each misspelled word, list any words in the dictionary that are
+obtainable by applying any of the following rules:
+a. Add one character.
+b. Remove one character.
+c. Exchange adjacent characters.
+5.22
+Prove Markov’s Inequality: If X is any random variable and a > 0, then
+Pr( |X| ≥a) ≤E( |X| )/a. Show how this inequality can be applied to Theorems 5.2
+and 5.3.
+5.23
+If a hopscotch table with parameter MAX_DIST has load factor 0.5, what is the
+approximate probability that an insertion requires a rehash?
+222
+Chapter 5
+Hashing
+5.24
+Implement a hopscotch hash table and compare its performance with linear
+probing, separate chaining, and cuckoo hashing.
+5.25
+Implement the classic cuckoo hash table in which two separate tables are maintained. The simplest way to do this is to use a single array and modify the hash
+function to access either the top half or the bottom half.
+5.26
+Extend the classic cuckoo hash table to use d hash functions.
+5.27
+Show the result of inserting the keys 10111101, 00000010, 10011011, 10111110,
+01111111, 01010001, 10010110, 00001011, 11001111, 10011110, 11011011,
+00101011, 01100001, 11110000, 01101111 into an initially empty extendible
+hashing data structure with M = 4.
+5.28
+Write a program to implement extendible hashing. If the table is small enough to
+fit in main memory, how does its performance compare with separate chaining and
+open addressing hashing?
+References
+Despite the apparent simplicity of hashing, much of the analysis is quite difficult, and there
+are still many unresolved questions. There are also many interesting theoretical issues.
+Hashing dates to at least 1953, when H. P. Luhn wrote an internal IBM memorandum
+that used separate chaining hashing. Early papers on hashing are [11] and [32]. A wealth
+of information on the subject, including an analysis of hashing with linear probing under
+the assumption of totally random and independent hashing, can be found in [25]. More
+recent results have shown that linear probing requires only 5-independent hash functions
+[31]. An excellent survey on early classic hash tables methods is [28]; [29] contains suggestions, and pitfalls, for choosing hash functions. Precise analytic and simulation results
+for separate chaining, linear probing, quadratic probing, and double hashing can be found
+in [19]. However, due to changes (improvements) in computer architecture and compilers,
+simulation results tend to quickly become dated.
+An analysis of double hashing can be found in [20] and [27]. Yet another collision
+resolution scheme is coalesced hashing, described in [33]. Yao [37] has shown the uniform
+hashing, in which no clustering exists, is optimal with respect to cost of a successful search,
+assuming that items cannot move once placed.
+Universal hash functions were first described in [5] and [35]; the latter paper introduces the “Carter-Wegman trick” of using Mersenne prime numbers to avoid expensive
+mod operations. Perfect hashing is described in [16], and a dynamic version of perfect
+hashing was described in [8]. [12] is a survey of some classic dynamic hashing schemes.
+The (log N/ log log N) bound on the length of the longest list in separate chaining
+was shown (in precise form) in [18]. The “power of two choices,” showing that when the
+shorter of two randomly selected lists in chosen, then the bound on the length of the
+longest list is lowered to only (log log N), was first described in [2]. An early example
+of the power of two choices is [4]. The classic work on cuckoo hashing is [30]; since the
+initial paper, a host of new results have appeared that analyze the amount of independence
+References
+223
+needed in the hash functions, and describe alternative implementations [7], [34], [15],
+[10], [23], [24], [1], [6], [9] and [17]. Hopscotch hashing appeared in [21].
+Extendible hashing appears in [13], with analysis in [14] and [36].
+Exercise 5.15 (a–d) is from [22]. Part (e) is from [26], and part (f) is from [3].
+1. Y. Arbitman, M. Naor, and G. Segev, “De-Amortized Cuckoo Hashing: Provable Worst-Case
+Performance and Experimental Results,” Proceedings of the 36th International Colloquium on
+Automata, Languages and Programming (2009), 107–118.
+2. Y. Azar, A. Broder, A. Karlin, and E. Upfal, “Balanced Allocations,” SIAM Journal of
+Computing, 29 (1999), 180–200.
+3. R. S. Boyer and J. S. Moore, “A Fast String Searching Algorithm,” Communications of the
+ACM, 20 (1977), 762–772.
+4. A. Broder and M. Mitzenmacher, “Using Multiple Hash Functions to Improve IP Lookups,”
+Proceedings of the Twentieth IEEE INFOCOM (2001), 1454–1463.
+5. J. L. Carter and M. N. Wegman, “Universal Classes of Hash Functions,” Journal of Computer
+and System Sciences, 18 (1979), 143–154.
+6. J. Cohen and D. Kane, “Bounds on the Independence Required for Cuckoo Hashing,”
+preprint.
+7. L. Devroye and P. Morin, “Cuckoo Hashing: Further Analysis,” Information Processing
+Letters, 86 (2003), 215–219.
+8. M. Dietzfelbinger, A. R. Karlin, K. Melhorn, F. Meyer auf der Heide, H. Rohnert, and R. E.
+Tarjan, “Dynamic Perfect Hashing: Upper and Lower Bounds,” SIAM Journal on Computing,
+23 (1994), 738–761.
+9. M. Dietzfelbinger and U. Schellbach, “On Risks of Using Cuckoo Hashing with Simple
+Universal Hash Classes,” Proceedings of the Twentieth Annual ACM-SIAM Symposium on
+Discrete Algorithms (2009), 795–804.
+10. M. Dietzfelbinger and C. Weidling, “Balanced Allocation and Dictionaries with Tightly
+Packed Constant Size Bins,” Theoretical Computer Science, 380 (2007), 47–68.
+11. I. Dumey, “Indexing for Rapid Random-Access Memory,” Computers and Automation, 5
+(1956), 6–9.
+12. R. J. Enbody and H. C. Du, “Dynamic Hashing Schemes,” Computing Surveys, 20 (1988),
+85–113.
+13. R. Fagin, J. Nievergelt, N. Pippenger, and H. R. Strong, “Extendible Hashing—A Fast
+Access Method for Dynamic Files,” ACM Transactions on Database Systems, 4 (1979),
+315–344.
+14. P. Flajolet, “On the Performance Evaluation of Extendible Hashing and Trie Searching,”
+Acta Informatica, 20 (1983), 345–369.
+15. D. Fotakis, R. Pagh, P. Sanders, and P. Spirakis, “Space Efficient Hash Tables with Worst
+Case Constant Access Time,” Theory of Computing Systems, 38 (2005), 229–248.
+16. M. L. Fredman, J. Komlos, and E. Szemeredi, “Storing a Sparse Table with O(1) Worst Case
+Access Time,” Journal of the ACM, 31 (1984), 538–544.
+17. A. Frieze, P. Melsted, and M. Mitzenmacher, “An Analysis of Random-Walk Cuckoo
+Hashing,” Proceedings of the Twelfth International Workshop on Approximation Algorithms in
+Combinatorial Optimization (APPROX) (2009), 350–364.
+224
+Chapter 5
+Hashing
+18. G. Gonnet, “Expected Length of the Longest Probe sequence in Hash Code Searching,”
+Journal of the Association for Computing Machinery, 28 (1981), 289–304.
+19. G. H. Gonnet and R. Baeza-Yates, Handbook of Algorithms and Data Structures, 2nd ed.,
+Addison-Wesley, Reading, Mass., 1991.
+20. L. J. Guibas and E. Szemeredi, “The Analysis of Double Hashing,” Journal of Computer and
+System Sciences, 16 (1978), 226–274.
+21. M. Herlihy, N. Shavit, and M. Tzafrir, “Hopscotch Hashing,” Proceedings of the TwentySecond International Symposium on Distributed Computing (2008), 350–364.
+22. R. M. Karp and M. O. Rabin, “Efficient Randomized Pattern-Matching Algorithms,” Aiken
+Computer Laboratory Report TR-31-81, Harvard University, Cambridge, Mass., 1981.
+23. A. Kirsch and M. Mitzenmacher, “The Power of One Move: Hashing Schemes
+for Hardware,” Proceedings of the 27th IEEE International Conference on Computer
+Communications (INFOCOM) (2008), 106–110.
+24. A. Kirsch, M. Mitzenmacher, and U. Wieder, “More Robust Hashing: Cuckoo Hashing
+with a Stash,” Proceedings of the Sixteenth Annual European Symposium on Algorithms (2008),
+611–622.
+25. D. E. Knuth, The Art of Computer Programming, Vol. 3: Sorting and Searching, 2nd ed.,
+Addison-Wesley, Reading, Mass., 1998.
+26. D. E. Knuth, J. H. Morris, and V. R. Pratt, “Fast Pattern Matching in Strings,” SIAM Journal
+on Computing, 6 (1977), 323–350.
+27. G. Lueker and M. Molodowitch, “More Analysis of Double Hashing,” Proceedings of the
+Twentieth ACM Symposium on Theory of Computing (1988), 354–359.
+28. W. D. Maurer and T. G. Lewis, “Hash Table Methods,” Computing Surveys, 7 (1975), 5–20.
+29. B. J. McKenzie, R. Harries, and T. Bell, “Selecting a Hashing Algorithm,” Software—Practice
+and Experience, 20 (1990), 209–224.
+30. R. Pagh and F. F. Rodler, “Cuckoo Hashing,” Journal of Algorithms, 51 (2004), 122–144.
+31. M. P ̆atra ̧scu and M. Thorup, “On the k-Independence Required by Linear Probing and
+Minwise Independence,” Proceedings of the 37th International Colloquium on Automata,
+Languages, and Programming (2010), 715–726.
+32. W. W. Peterson, “Addressing for Random Access Storage,” IBM Journal of Research and
+Development, 1 (1957), 130–146.
+33. J. S. Vitter, “Implementations for Coalesced Hashing,” Communications of the ACM, 25
+(1982), 911–926.
+34. B. Vöcking, “How Asymmetry Helps Load Balancing,” Journal of the ACM, 50 (2003),
+568–589.
+35. M. N. Wegman and J. Carter, “New Hash Functions and Their Use in Authentication and
+Set Equality,” Journal of Computer and System Sciences, 22 (1981), 265–279.
+36. A. C. Yao, “A Note on the Analysis of Extendible Hashing,” Information Processing Letters,
+11 (1980), 84–86.
+37. A. C. Yao, “Uniform Hashing Is Optimal,” Journal of the ACM, 32 (1985), 687–693.

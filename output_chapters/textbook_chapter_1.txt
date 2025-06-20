@@ -1,0 +1,1425 @@
+C H A P T E R 1
+Introduction
+In this chapter, we discuss the aims and goals of this text and briefly review programming
+concepts and discrete mathematics. We will
+r See that how a program performs for reasonably large input is just as important as its
+performance on moderate amounts of input.
+r Summarize the basic mathematical background needed for the rest of the book.
+r Briefly review recursion.
+r Summarize some important features of Java that are used throughout the text.
+1.1 What’s the Book About?
+Suppose you have a group of N numbers and would like to determine the kth largest. This
+is known as the selection problem. Most students who have had a programming course
+or two would have no difficulty writing a program to solve this problem. There are quite a
+few “obvious” solutions.
+One way to solve this problem would be to read the N numbers into an array, sort the
+array in decreasing order by some simple algorithm such as bubblesort, and then return
+the element in position k.
+A somewhat better algorithm might be to read the first k elements into an array and
+sort them (in decreasing order). Next, each remaining element is read one by one. As a new
+element arrives, it is ignored if it is smaller than the kth element in the array. Otherwise, it
+is placed in its correct spot in the array, bumping one element out of the array. When the
+algorithm ends, the element in the kth position is returned as the answer.
+Both algorithms are simple to code, and you are encouraged to do so. The natural questions, then, are which algorithm is better and, more important, is either algorithm good
+enough? A simulation using a random file of 30 million elements and k = 15,000,000
+will show that neither algorithm finishes in a reasonable amount of time; each requires
+several days of computer processing to terminate (albeit eventually with a correct answer).
+An alternative method, discussed in Chapter 7, gives a solution in about a second. Thus,
+although our proposed algorithms work, they cannot be considered good algorithms,
+because they are entirely impractical for input sizes that a third algorithm can handle in a
+reasonable amount of time.
+1
+2
+Chapter 1
+Introduction
+1
+2
+3
+4
+1
+t
+h
+i
+s
+2
+w
+a
+t
+s
+3
+o
+a
+h
+g
+4
+f
+g
+d
+t
+Figure 1.1 Sample word puzzle
+A second problem is to solve a popular word puzzle. The input consists of a twodimensional array of letters and a list of words. The object is to find the words in the puzzle.
+These words may be horizontal, vertical, or diagonal in any direction. As an example, the
+puzzle shown in Figure 1.1 contains the words this, two, fat, and that. The word this begins
+at row 1, column 1, or (1,1), and extends to (1,4); two goes from (1,1) to (3,1); fat goes
+from (4,1) to (2,3); and that goes from (4,4) to (1,1).
+Again, there are at least two straightforward algorithms that solve the problem. For
+each word in the word list, we check each ordered triple (row, column, orientation) for
+the presence of the word. This amounts to lots of nested for loops but is basically
+straightforward.
+Alternatively, for each ordered quadruple (row, column, orientation, number of characters)
+that doesn’t run off an end of the puzzle, we can test whether the word indicated is in the
+word list. Again, this amounts to lots of nested for loops. It is possible to save some time
+if the maximum number of characters in any word is known.
+It is relatively easy to code up either method of solution and solve many of the real-life
+puzzles commonly published in magazines. These typically have 16 rows, 16 columns,
+and 40 or so words. Suppose, however, we consider the variation where only the puzzle
+board is given and the word list is essentially an English dictionary. Both of the solutions
+proposed require considerable time to solve this problem and therefore are not acceptable.
+However, it is possible, even with a large word list, to solve the problem in a matter of
+seconds.
+An important concept is that, in many problems, writing a working program is not
+good enough. If the program is to be run on a large data set, then the running time becomes
+an issue. Throughout this book we will see how to estimate the running time of a program
+for large inputs and, more important, how to compare the running times of two programs
+without actually coding them. We will see techniques for drastically improving the speed
+of a program and for determining program bottlenecks. These techniques will enable us to
+find the section of the code on which to concentrate our optimization efforts.
+1.2 Mathematics Review
+This section lists some of the basic formulas you need to memorize or be able to derive
+and reviews basic proof techniques.
+1.2
+Mathematics Review
+3
+1.2.1 Exponents
+XAXB = XA+B
+XA
+XB = XA−B
+(XA)B = XAB
+XN + XN = 2XN ̸= X2N
+2N + 2N = 2N+1
+1.2.2 Logarithms
+In computer science, all logarithms are to the base 2 unless specified otherwise.
+Definition 1.1.
+XA = B if and only if logX B = A
+Several convenient equalities follow from this definition.
+Theorem 1.1.
+logA B = logC B
+logC A;
+A, B, C > 0, A ̸= 1
+Proof.
+Let X = logC B, Y = logC A, and Z = logA B. Then, by the definition of logarithms,
+CX = B, CY = A, and AZ = B. Combining these three equalities yields CX = B =
+(CY)Z. Therefore, X = YZ, which implies Z = X/Y, proving the theorem.
+Theorem 1.2.
+log AB = log A + log B; A, B > 0
+Proof.
+Let X = log A, Y = log B, and Z = log AB. Then, assuming the default base of 2,
+2X = A, 2Y = B, and 2Z = AB. Combining the last three equalities yields 2X2Y =
+AB = 2Z. Therefore, X + Y = Z, which proves the theorem.
+Some other useful formulas, which can all be derived in a similar manner, follow.
+log A/B = log A −log B
+log(AB) = B log A
+log X < X
+for all X > 0
+log 1 = 0,
+log 2 = 1,
+log 1,024 = 10,
+log 1,048,576 = 20
+4
+Chapter 1
+Introduction
+1.2.3 Series
+The easiest formulas to remember are
+N
+
+i=0
+2i = 2N+1 −1
+and the companion,
+N
+
+i=0
+Ai = AN+1 −1
+A −1
+In the latter formula, if 0 < A < 1, then
+N
+
+i=0
+Ai ≤
+1
+1 −A
+and as N tends to ∞, the sum approaches 1/(1 −A). These are the “geometric series”
+formulas.
+We can derive the last formula for ∞
+i=0 Ai (0 < A < 1) in the following manner. Let
+S be the sum. Then
+S = 1 + A + A2 + A3 + A4 + A5 + · · ·
+Then
+AS = A + A2 + A3 + A4 + A5 + · · ·
+If we subtract these two equations (which is permissible only for a convergent series),
+virtually all the terms on the right side cancel, leaving
+S −AS = 1
+which implies that
+S =
+1
+1 −A
+We can use this same technique to compute ∞
+i=1 i/2i, a sum that occurs frequently.
+We write
+S = 1
+2 + 2
+22 + 3
+23 + 4
+24 + 5
+25 + · · ·
+and multiply by 2, obtaining
+2S = 1 + 2
+2 + 3
+22 + 4
+23 + 5
+24 + 6
+25 + · · ·
+1.2
+Mathematics Review
+5
+Subtracting these two equations yields
+S = 1 + 1
+2 + 1
+22 + 1
+23 + 1
+24 + 1
+25 + · · ·
+Thus, S = 2.
+Another type of common series in analysis is the arithmetic series. Any such series can
+be evaluated from the basic formula.
+N
+
+i=1
+i = N(N + 1)
+2
+≈N2
+2
+For instance, to find the sum 2 + 5 + 8 + · · · + (3k −1), rewrite it as 3(1 + 2 + 3 + · · · +
+k) −(1 + 1 + 1 + · · · + 1), which is clearly 3k(k + 1)/2 −k. Another way to remember
+this is to add the first and last terms (total 3k + 1), the second and next to last terms (total
+3k + 1), and so on. Since there are k/2 of these pairs, the total sum is k(3k + 1)/2, which
+is the same answer as before.
+The next two formulas pop up now and then but are fairly uncommon.
+N
+
+i=1
+i2 = N(N + 1)(2N + 1)
+6
+≈N3
+3
+N
+
+i=1
+ik ≈Nk+1
+|k + 1|
+k ̸= −1
+When k = −1, the latter formula is not valid. We then need the following formula,
+which is used far more in computer science than in other mathematical disciplines. The
+numbers HN are known as the harmonic numbers, and the sum is known as a harmonic
+sum. The error in the following approximation tends to γ ≈0.57721566, which is known
+as Euler’s constant.
+HN =
+N
+
+i=1
+1
+i ≈loge N
+These two formulas are just general algebraic manipulations.
+N
+
+i=1
+f(N) = N f(N)
+N
+
+i=n0
+f(i) =
+N
+
+i=1
+f(i) −
+n0−1
+
+i=1
+f(i)
+1.2.4 Modular Arithmetic
+We say that A is congruent to B modulo N, written A ≡B (mod N), if N divides A −B.
+Intuitively, this means that the remainder is the same when either A or B is divided by
+N. Thus, 81 ≡61 ≡1 (mod 10). As with equality, if A ≡B (mod N), then A + C ≡
+B + C (mod N) and AD ≡BD (mod N).
+6
+Chapter 1
+Introduction
+Often, N is a prime number. In that case, there are three important theorems.
+First, if N is prime, then ab ≡0 (mod N) is true if and only if a ≡0 (mod N)
+or b ≡0 (mod N). In other words, if a prime number N divides a product of two
+numbers, it divides at least one of the two numbers.
+Second, if N is prime, then the equation ax ≡1 (mod N) has a unique solution
+(mod N), for all 0 < a < N. This solution 0 < x < N, is the multiplicative inverse.
+Third, if N is prime, then the equation x2 ≡a (mod N) has either two solutions
+(mod N), for all 0 < a < N, or no solutions.
+There are many theorems that apply to modular arithmetic, and some of them require
+extraordinary proofs in number theory. We will use modular arithmetic sparingly, and the
+preceding theorems will suffice.
+1.2.5 The P Word
+The two most common ways of proving statements in data structure analysis are proof
+by induction and proof by contradiction (and occasionally proof by intimidation, used
+by professors only). The best way of proving that a theorem is false is by exhibiting a
+counterexample.
+Proof by Induction
+A proof by induction has two standard parts. The first step is proving a base case, that is,
+establishing that a theorem is true for some small (usually degenerate) value(s); this step is
+almost always trivial. Next, an inductive hypothesis is assumed. Generally this means that
+the theorem is assumed to be true for all cases up to some limit k. Using this assumption,
+the theorem is then shown to be true for the next value, which is typically k + 1. This
+proves the theorem (as long as k is finite).
+As an example, we prove that the Fibonacci numbers, F0 = 1, F1 = 1, F2 = 2, F3 = 3,
+F4 = 5, . . . , Fi = Fi−1 +Fi−2, satisfy Fi < (5/3)i, for i ≥1. (Some definitions have F0 = 0,
+which shifts the series.) To do this, we first verify that the theorem is true for the trivial
+cases. It is easy to verify that F1 = 1 < 5/3 and F2 = 2 < 25/9; this proves the basis.
+We assume that the theorem is true for i = 1, 2, . . . , k; this is the inductive hypothesis. To
+prove the theorem, we need to show that Fk+1 < (5/3)k+1. We have
+Fk+1 = Fk + Fk−1
+by the definition, and we can use the inductive hypothesis on the right-hand side,
+obtaining
+Fk+1 < (5/3)k + (5/3)k−1
+< (3/5)(5/3)k+1 + (3/5)2(5/3)k+1
+< (3/5)(5/3)k+1 + (9/25)(5/3)k+1
+1.2
+Mathematics Review
+7
+which simplifies to
+Fk+1 < (3/5 + 9/25)(5/3)k+1
+< (24/25)(5/3)k+1
+< (5/3)k+1
+proving the theorem.
+As a second example, we establish the following theorem.
+Theorem 1.3.
+If N ≥1, then N
+i=1 i2 = N(N+1)(2N+1)
+6
+Proof.
+The proof is by induction. For the basis, it is readily seen that the theorem is true when
+N = 1. For the inductive hypothesis, assume that the theorem is true for 1 ≤k ≤N.
+We will establish that, under this assumption, the theorem is true for N + 1. We have
+N+1
+
+i=1
+i2 =
+N
+
+i=1
+i2 + (N + 1)2
+Applying the inductive hypothesis, we obtain
+N+1
+
+i=1
+i2 = N(N + 1)(2N + 1)
+6
++ (N + 1)2
+= (N + 1)
+N(2N + 1)
+6
++ (N + 1)
+
+= (N + 1)2N2 + 7N + 6
+6
+= (N + 1)(N + 2)(2N + 3)
+6
+Thus,
+N+1
+
+i=1
+i2 = (N + 1)[(N + 1) + 1][2(N + 1) + 1]
+6
+proving the theorem.
+Proof by Counterexample
+The statement Fk ≤k2 is false. The easiest way to prove this is to compute F11 =144>112.
+Proof by Contradiction
+Proof by contradiction proceeds by assuming that the theorem is false and showing that this
+assumption implies that some known property is false, and hence the original assumption
+was erroneous. A classic example is the proof that there is an infinite number of primes. To
+8
+Chapter 1
+Introduction
+prove this, we assume that the theorem is false, so that there is some largest prime Pk. Let
+P1, P2, . . . , Pk be all the primes in order and consider
+N = P1P2P3 · · · Pk + 1
+Clearly, N is larger than Pk, so by assumption N is not prime. However, none of
+P1, P2, . . . , Pk divides N exactly, because there will always be a remainder of 1. This is
+a contradiction, because every number is either prime or a product of primes. Hence, the
+original assumption, that Pk is the largest prime, is false, which implies that the theorem is
+true.
+1.3 A Brief Introduction to Recursion
+Most mathematical functions that we are familiar with are described by a simple formula.
+For instance, we can convert temperatures from Fahrenheit to Celsius by applying the
+formula
+C = 5(F −32)/9
+Given this formula, it is trivial to write a Java method; with declarations and braces
+removed, the one-line formula translates to one line of Java.
+Mathematical functions are sometimes defined in a less standard form. As an example,
+we can define a function f, valid on nonnegative integers, that satisfies f(0) = 0 and
+f(x) = 2f(x −1) + x2. From this definition we see that f(1) = 1, f(2) = 6, f(3) = 21,
+and f(4) = 58. A function that is defined in terms of itself is called recursive. Java allows
+functions to be recursive.1 It is important to remember that what Java provides is merely
+an attempt to follow the recursive spirit. Not all mathematically recursive functions are
+efficiently (or correctly) implemented by Java’s simulation of recursion. The idea is that the
+recursive function f ought to be expressible in only a few lines, just like a nonrecursive
+function. Figure 1.2 shows the recursive implementation of f.
+Lines 3 and 4 handle what is known as the base case, that is, the value for which
+the function is directly known without resorting to recursion. Just as declaring f(x) =
+2f(x−1)+x2 is meaningless, mathematically, without including the fact that f(0) = 0, the
+recursive Java method doesn’t make sense without a base case. Line 6 makes the recursive
+call.
+There are several important and possibly confusing points about recursion. A common
+question is: Isn’t this just circular logic? The answer is that although we are defining a
+method in terms of itself, we are not defining a particular instance of the method in terms
+of itself. In other words, evaluating f(5) by computing f(5) would be circular. Evaluating
+f(5) by computing f(4) is not circular—unless, of course, f(4) is evaluated by eventually
+computing f(5). The two most important issues are probably the how and why questions.
+1 Using recursion for numerical calculations is usually a bad idea. We have done so to illustrate the basic
+points.
+1.3
+A Brief Introduction to Recursion
+9
+1
+public static int f( int x )
+2
+{
+3
+if( x == 0 )
+4
+return 0;
+5
+else
+6
+return 2 * f( x - 1 ) + x * x;
+7
+}
+Figure 1.2 A recursive method
+In Chapter 3, the how and why issues are formally resolved. We will give an incomplete
+description here.
+It turns out that recursive calls are handled no differently from any others. If f is called
+with the value of 4, then line 6 requires the computation of 2 ∗f(3) + 4 ∗4. Thus, a call
+is made to compute f(3). This requires the computation of 2 ∗f(2) + 3 ∗3. Therefore,
+another call is made to compute f(2). This means that 2 ∗f(1) + 2 ∗2 must be evaluated.
+To do so, f(1) is computed as 2 ∗f(0) + 1 ∗1. Now, f(0) must be evaluated. Since
+this is a base case, we know a priori that f(0) = 0. This enables the completion of the
+calculation for f(1), which is now seen to be 1. Then f(2), f(3), and finally f(4) can be
+determined. All the bookkeeping needed to keep track of pending calls (those started but
+waiting for a recursive call to complete), along with their variables, is done by the computer
+automatically. An important point, however, is that recursive calls will keep on being made
+until a base case is reached. For instance, an attempt to evaluate f(−1) will result in calls
+to f(−2), f(−3), and so on. Since this will never get to a base case, the program won’t
+be able to compute the answer (which is undefined anyway). Occasionally, a much more
+subtle error is made, which is exhibited in Figure 1.3. The error in Figure 1.3 is that
+bad(1) is defined, by line 6, to be bad(1). Obviously, this doesn’t give any clue as to what
+bad(1) actually is. The computer will thus repeatedly make calls to bad(1) in an attempt
+to resolve its values. Eventually, its bookkeeping system will run out of space, and the
+program will terminate abnormally. Generally, we would say that this method doesn’t work
+for one special case but is correct otherwise. This isn’t true here, since bad(2) calls bad(1).
+Thus, bad(2) cannot be evaluated either. Furthermore, bad(3), bad(4), and bad(5) all make
+calls to bad(2). Since bad(2) is unevaluable, none of these values are either. In fact, this
+1
+public static int bad( int n )
+2
+{
+3
+if( n == 0 )
+4
+return 0;
+5
+else
+6
+return bad( n / 3 + 1 ) + n - 1;
+7
+}
+Figure 1.3 A nonterminating recursive method
+10
+Chapter 1
+Introduction
+program doesn’t work for any nonnegative value of n, except 0. With recursive programs,
+there is no such thing as a “special case.”
+These considerations lead to the first two fundamental rules of recursion:
+1. Base cases. You must always have some base cases, which can be solved without
+recursion.
+2. Making progress. For the cases that are to be solved recursively, the recursive call must
+always be to a case that makes progress toward a base case.
+Throughout this book, we will use recursion to solve problems. As an example of
+a nonmathematical use, consider a large dictionary. Words in dictionaries are defined in
+terms of other words. When we look up a word, we might not always understand the
+definition, so we might have to look up words in the definition. Likewise, we might not
+understand some of those, so we might have to continue this search for a while. Because
+the dictionary is finite, eventually either (1) we will come to a point where we understand
+all of the words in some definition (and thus understand that definition and retrace our
+path through the other definitions) or (2) we will find that the definitions are circular
+and we are stuck, or that some word we need to understand for a definition is not in the
+dictionary.
+Our recursive strategy to understand words is as follows: If we know the meaning of a
+word, then we are done; otherwise, we look the word up in the dictionary. If we understand
+all the words in the definition, we are done; otherwise, we figure out what the definition
+means by recursively looking up the words we don’t know. This procedure will terminate
+if the dictionary is well defined but can loop indefinitely if a word is either not defined or
+circularly defined.
+Printing Out Numbers
+Suppose we have a positive integer, n, that we wish to print out. Our routine will have the
+heading printOut(n). Assume that the only I/O routines available will take a single-digit
+number and output it to the terminal. We will call this routine printDigit; for example,
+printDigit(4) will output a 4 to the terminal.
+Recursion provides a very clean solution to this problem. To print out 76234, we need
+to first print out 7623 and then print out 4. The second step is easily accomplished with
+the statement printDigit(n%10), but the first doesn’t seem any simpler than the original
+problem. Indeed it is virtually the same problem, so we can solve it recursively with the
+statement printOut(n/10).
+This tells us how to solve the general problem, but we still need to make sure that
+the program doesn’t loop indefinitely. Since we haven’t defined a base case yet, it is clear
+that we still have something to do. Our base case will be printDigit(n) if 0 ≤n < 10.
+Now printOut(n) is defined for every positive number from 0 to 9, and larger numbers are
+defined in terms of a smaller positive number. Thus, there is no cycle. The entire method
+is shown in Figure 1.4.
+1.3
+A Brief Introduction to Recursion
+11
+1
+public static void printOut( int n )
+/* Print nonnegative n */
+2
+{
+3
+if( n >= 10 )
+4
+printOut( n / 10 );
+5
+printDigit( n % 10 );
+6
+}
+Figure 1.4 Recursive routine to print an integer
+We have made no effort to do this efficiently. We could have avoided using the mod
+routine (which can be very expensive) because n%10 = n −⌊n/10⌋∗10.2
+Recursion and Induction
+Let us prove (somewhat) rigorously that the recursive number-printing program works. To
+do so, we’ll use a proof by induction.
+Theorem 1.4.
+The recursive number-printing algorithm is correct for n ≥0.
+Proof (by induction on the number of digits in n).
+First, if n has one digit, then the program is trivially correct, since it merely makes
+a call to printDigit. Assume then that printOut works for all numbers of k or fewer
+digits. A number of k + 1 digits is expressed by its first k digits followed by its least
+significant digit. But the number formed by the first k digits is exactly ⌊n/10⌋, which,
+by the inductive hypothesis, is correctly printed, and the last digit is n mod 10, so
+the program prints out any (k + 1)-digit number correctly. Thus, by induction, all
+numbers are correctly printed.
+This proof probably seems a little strange in that it is virtually identical to the algorithm
+description. It illustrates that in designing a recursive program, all smaller instances of the
+same problem (which are on the path to a base case) may be assumed to work correctly. The
+recursive program needs only to combine solutions to smaller problems, which are “magically” obtained by recursion, into a solution for the current problem. The mathematical
+justification for this is proof by induction. This gives the third rule of recursion:
+3. Design rule. Assume that all the recursive calls work.
+This rule is important because it means that when designing recursive programs, you generally don’t need to know the details of the bookkeeping arrangements, and you don’t have
+to try to trace through the myriad of recursive calls. Frequently, it is extremely difficult
+to track down the actual sequence of recursive calls. Of course, in many cases this is an
+indication of a good use of recursion, since the computer is being allowed to work out the
+complicated details.
+2 ⌊x⌋is the largest integer that is less than or equal to x.
+12
+Chapter 1
+Introduction
+The main problem with recursion is the hidden bookkeeping costs. Although these
+costs are almost always justifiable, because recursive programs not only simplify the algorithm design but also tend to give cleaner code, recursion should never be used as a
+substitute for a simple for loop. We’ll discuss the overhead involved in recursion in more
+detail in Section 3.6.
+When writing recursive routines, it is crucial to keep in mind the four basic rules of
+recursion:
+1. Base cases. You must always have some base cases, which can be solved without
+recursion.
+2. Making progress. For the cases that are to be solved recursively, the recursive call must
+always be to a case that makes progress toward a base case.
+3. Design rule. Assume that all the recursive calls work.
+4. Compound interest rule. Never duplicate work by solving the same instance of a problem
+in separate recursive calls.
+The fourth rule, which will be justified (along with its nickname) in later sections, is the
+reason that it is generally a bad idea to use recursion to evaluate simple mathematical functions, such as the Fibonacci numbers. As long as you keep these rules in mind, recursive
+programming should be straightforward.
+1.4 Implementing Generic Components
+Pre-Java 5
+An important goal of object-oriented programming is the support of code reuse. An important mechanism that supports this goal is the generic mechanism: If the implementation
+is identical except for the basic type of the object, a generic implementation can be used
+to describe the basic functionality. For instance, a method can be written to sort an array
+of items; the logic is independent of the types of objects being sorted, so a generic method
+could be used.
+Unlike many of the newer languages (such as C++, which uses templates to implement
+generic programming), before version 1.5, Java did not support generic implementations
+directly. Instead, generic programming was implemented using the basic concepts of inheritance. This section describes how generic methods and classes can be implemented in Java
+using the basic principles of inheritance.
+Direct support for generic methods and classes was announced by Sun in June 2001 as
+a future language addition. Finally, in late 2004, Java 5 was released and provided support
+for generic methods and classes. However, using generic classes requires an understanding
+of the pre-Java 5 idioms for generic programming. As a result, an understanding of how
+inheritance is used to implement generic programs is essential, even in Java 5.
+1.4
+Implementing Generic Components Pre-Java 5
+13
+1.4.1 Using Object for Genericity
+The basic idea in Java is that we can implement a generic class by using an appropriate
+superclass, such as Object. An example is the MemoryCell class shown in Figure 1.5.
+There are two details that must be considered when we use this strategy. The first is
+illustrated in Figure 1.6, which depicts a main that writes a "37" to a MemoryCell object and
+then reads from the MemoryCell object. To access a specific method of the object, we must
+downcast to the correct type. (Of course, in this example, we do not need the downcast,
+since we are simply invoking the toString method at line 9, and this can be done for any
+object.)
+A second important detail is that primitive types cannot be used. Only reference
+types are compatible with Object. A standard workaround to this problem is discussed
+momentarily.
+1
+// MemoryCell class
+2
+//
+Object read( )
+-->
+Returns the stored value
+3
+//
+void write( Object x ) -->
+x is stored
+4
+5
+public class MemoryCell
+6
+{
+7
+// Public methods
+8
+public Object read( )
+{ return storedValue; }
+9
+public void write( Object x ) { storedValue = x; }
+10
+11
+// Private internal data representation
+12
+private Object storedValue;
+13
+}
+Figure 1.5 A generic MemoryCell class (pre-Java 5)
+1
+public class TestMemoryCell
+2
+{
+3
+public static void main( String [ ] args )
+4
+{
+5
+MemoryCell m = new MemoryCell( );
+6
+7
+m.write( "37" );
+8
+String val = (String) m.read( );
+9
+System.out.println( "Contents are: " + val );
+10
+}
+11
+}
+Figure 1.6 Using the generic MemoryCell class (pre-Java 5)
+14
+Chapter 1
+Introduction
+1.4.2 Wrappers for Primitive Types
+When we implement algorithms, often we run into a language typing problem: We have
+an object of one type, but the language syntax requires an object of a different type.
+This technique illustrates the basic theme of a wrapper class. One typical use is to
+store a primitive type, and add operations that the primitive type either does not support
+or does not support correctly.
+In Java, we have already seen that although every reference type is compatible with
+Object, the eight primitive types are not. As a result, Java provides a wrapper class for each
+of the eight primitive types. For instance, the wrapper for the int type is Integer. Each
+wrapper object is immutable (meaning its state can never change), stores one primitive
+value that is set when the object is constructed, and provides a method to retrieve the
+value. The wrapper classes also contain a host of static utility methods.
+As an example, Figure 1.7 shows how we can use the MemoryCell to store integers.
+1.4.3 Using Interface Types for Genericity
+Using Object as a generic type works only if the operations that are being performed can
+be expressed using only methods available in the Object class.
+Consider, for example, the problem of finding the maximum item in an array of items.
+The basic code is type-independent, but it does require the ability to compare any two
+objects and decide which is larger and which is smaller. Thus we cannot simply find the
+maximum of an array of Object—we need more information. The simplest idea would be to
+find the maximum of an array of Comparable. To determine order, we can use the compareTo
+method that we know must be available for all Comparables. The code to do this is shown
+in Figure 1.8, which provides a main that finds the maximum in an array of String or Shape.
+It is important to mention a few caveats. First, only objects that implement the
+Comparable interface can be passed as elements of the Comparable array. Objects that have a
+compareTo method but do not declare that they implement Comparable are not Comparable,
+and do not have the requisite IS-A relationship. Thus, it is presumed that Shape implements
+1
+public class WrapperDemo
+2
+{
+3
+public static void main( String [ ] args )
+4
+{
+5
+MemoryCell m = new MemoryCell( );
+6
+7
+m.write( new Integer( 37 ) );
+8
+Integer wrapperVal = (Integer) m.read( );
+9
+int val = wrapperVal.intValue( );
+10
+System.out.println( "Contents are: " + val );
+11
+}
+12
+}
+Figure 1.7 An illustration of the Integer wrapper class
+1.4
+Implementing Generic Components Pre-Java 5
+15
+1
+class FindMaxDemo
+2
+{
+3
+/**
+4
+* Return max item in arr.
+5
+* Precondition: arr.length > 0
+6
+*/
+7
+public static Comparable findMax( Comparable [ ] arr )
+8
+{
+9
+int maxIndex = 0;
+10
+11
+for( int i = 1; i < arr.length; i++ )
+12
+if( arr[ i ].compareTo( arr[ maxIndex ] ) > 0 )
+13
+maxIndex = i;
+14
+15
+return arr[ maxIndex ];
+16
+}
+17
+18
+/**
+19
+* Test findMax on Shape and String objects.
+20
+*/
+21
+public static void main( String [ ] args )
+22
+{
+23
+Shape [ ] sh1 = { new Circle( 2.0 ),
+24
+new Square( 3.0 ),
+25
+new Rectangle( 3.0, 4.0 ) };
+26
+27
+String [ ] st1 = { "Joe", "Bob", "Bill", "Zeke" };
+28
+29
+System.out.println( findMax( sh1 ) );
+30
+System.out.println( findMax( st1 ) );
+31
+}
+32
+}
+Figure 1.8 A generic findMax routine, with demo using shapes and strings (pre-Java 5)
+the Comparable interface, perhaps comparing areas of Shapes. It is also implicit in the test
+program that Circle, Square, and Rectangle are subclasses of Shape.
+Second, if the Comparable array were to have two objects that are incompatible (e.g., a
+String and a Shape), the compareTo method would throw a ClassCastException. This is the
+expected (indeed, required) behavior.
+Third, as before, primitives cannot be passed as Comparables, but the wrappers work
+because they implement the Comparable interface.
+Fourth, it is not required that the interface be a standard library interface.
+Finally, this solution does not always work, because it might be impossible to declare
+that a class implements a needed interface. For instance, the class might be a library class,
+16
+Chapter 1
+Introduction
+while the interface is a user-defined interface. And if the class is final, we can’t extend it
+to create a new class. Section 1.6 offers another solution for this problem, which is the
+function object. The function object uses interfaces also and is perhaps one of the central
+themes encountered in the Java library.
+1.4.4 Compatibility of Array Types
+One of the difficulties in language design is how to handle inheritance for aggregate types.
+Suppose that Employee IS-A Person. Does this imply that Employee[] IS-A Person[]? In other
+words, if a routine is written to accept Person[] as a parameter, can we pass an Employee[]
+as an argument?
+At first glance, this seems like a no-brainer, and Employee[] should be type-compatible
+with Person[]. However, this issue is trickier than it seems. Suppose that in addition to
+Employee, Student IS-A Person. Suppose the Employee[] is type-compatible with Person[].
+Then consider this sequence of assignments:
+Person[] arr = new Employee[ 5 ]; // compiles: arrays are compatible
+arr[ 0 ] = new Student( ... );
+// compiles: Student IS-A Person
+Both assignments compile, yet arr[0] is actually referencing an Employee, and Student
+IS-NOT-A Employee. Thus we have type confusion. The runtime system cannot throw a
+ClassCastException since there is no cast.
+The easiest way to avoid this problem is to specify that the arrays are not typecompatible. However, in Java the arrays are type-compatible. This is known as a covariant
+array type. Each array keeps track of the type of object it is allowed to store. If
+an incompatible type is inserted into the array, the Virtual Machine will throw an
+ArrayStoreException.
+The covariance of arrays was needed in earlier versions of Java because otherwise the
+calls on lines 29 and 30 in Figure 1.8 would not compile.
+1.5 Implementing Generic Components
+Using Java 5 Generics
+Java 5 supports generic classes that are very easy to use. However, writing generic classes
+requires a little more work. In this section, we illustrate the basics of how generic classes
+and methods are written. We do not attempt to cover all the constructs of the language,
+which are quite complex and sometimes tricky. Instead, we show the syntax and idioms
+that are used throughout this book.
+1.5
+Implementing Generic Components Using Java 5 Generics
+17
+1.5.1 Simple Generic Classes and Interfaces
+Figure 1.9 shows a generic version of the MemoryCell class previously depicted in Figure 1.5.
+Here, we have changed the name to GenericMemoryCell because neither class is in a package
+and thus the names cannot be the same.
+When a generic class is specified, the class declaration includes one or more type
+parameters enclosed in angle brackets <> after the class name. Line 1 shows that the
+GenericMemoryCell takes one type parameter. In this instance, there are no explicit restrictions on the type parameter, so the user can create types such as GenericMemoryCell<String>
+and GenericMemoryCell<Integer> but not GenericMemoryCell<int>. Inside the GenericMemoryCell class declaration, we can declare fields of the generic type and methods that use
+the generic type as a parameter or return type. For example, in line 5 of Figure 1.9, the
+write method for GenericMemoryCell<String> requires a parameter of type String. Passing
+anything else will generate a compiler error.
+Interfaces can also be declared as generic. For example, prior to Java 5 the Comparable
+interface was not generic, and its compareTo method took an Object as the parameter. As
+a result, any reference variable passed to the compareTo method would compile, even if
+the variable was not a sensible type, and only at runtime would the error be reported as
+a ClassCastException. In Java 5, the Comparable class is generic, as shown in Figure 1.10.
+The String class, for instance, now implements Comparable<String> and has a compareTo
+method that takes a String as a parameter. By making the class generic, many of the errors
+that were previously only reported at runtime become compile-time errors.
+1
+public class GenericMemoryCell<AnyType>
+2
+{
+3
+public AnyType read( )
+4
+{ return storedValue; }
+5
+public void write( AnyType x )
+6
+{ storedValue = x; }
+7
+8
+private AnyType storedValue;
+9
+}
+Figure 1.9 Generic implementation of the MemoryCell class
+1
+package java.lang;
+2
+3
+public interface Comparable<AnyType>
+4
+{
+5
+public int compareTo( AnyType other );
+6
+}
+Figure 1.10 Comparable interface, Java 5 version which is generic
+18
+Chapter 1
+Introduction
+1.5.2 Autoboxing/Unboxing
+The code in Figure 1.7 is annoying to write because using the wrapper class requires
+creation of an Integer object prior to the call to write, and then the extraction of the int
+value from the Integer, using the intValue method. Prior to Java 5, this is required because
+if an int is passed in a place where an Integer object is required, the compiler will generate
+an error message, and if the result of an Integer object is assigned to an int, the compiler
+will generate an error message. This resulting code in Figure 1.7 accurately reflects the
+distinction between primitive types and reference types, yet it does not cleanly express the
+programmer’s intent of storing ints in the collection.
+Java 5 rectifies this situation. If an int is passed in a place where an Integer is
+required, the compiler will insert a call to the Integer constructor behind the scenes. This
+is known as autoboxing. And if an Integer is passed in a place where an int is required,
+the compiler will insert a call to the intValue method behind the scenes. This is known
+as auto-unboxing. Similar behavior occurs for the seven other primitive/wrapper pairs.
+Figure 1.11a illustrates the use of autoboxing and unboxing in Java 5. Note that the entities referenced in the GenericMemoryCell are still Integer objects; int cannot be substituted
+for Integer in the GenericMemoryCell instantiations.
+1.5.3 The Diamond Operator
+In Figure 1.11a, line 5 is annoying because since m is of type GenericMemoryCell<Integer>,
+it is obvious that object being created must also be GenericMemoryCell<Integer>; any other
+type parameter would generate a compiler error. Java 7 adds a new language feature, known
+as the diamond operator, that allows line 5 to be rewritten as
+GenericMemoryCell<Integer> m = new GenericMemoryCell<>( );
+The diamond operator simplifies the code, with no cost to the developer, and we use it
+throughout the text. Figure 1.11b shows the Java 7 version, incorporating the diamond
+operator.
+1
+class BoxingDemo
+2
+{
+3
+public static void main( String [ ] args )
+4
+{
+5
+GenericMemoryCell<Integer> m = new GenericMemoryCell<Integer>( );
+6
+7
+m.write( 37 );
+8
+int val = m.read( );
+9
+System.out.println( "Contents are: " + val );
+10
+}
+11
+}
+Figure 1.11a Autoboxing and unboxing (Java 5)
+1.5
+Implementing Generic Components Using Java 5 Generics
+19
+1
+class BoxingDemo
+2
+{
+3
+public static void main( String [ ] args )
+4
+{
+5
+GenericMemoryCell<Integer> m = new GenericMemoryCell<>( );
+6
+7
+m.write( 5 );
+8
+int val = m.read( );
+9
+System.out.println( "Contents are: " + val );
+10
+}
+11
+}
+Figure 1.11b Autoboxing and unboxing (Java 7, using diamond operator)
+1.5.4 Wildcards with Bounds
+Figure 1.12 shows a static method that computes the total area in an array of Shapes (we
+assume Shape is a class with an area method; Circle and Square extend Shape). Suppose we
+want to rewrite the method so that it works with a parameter that is Collection<Shape>.
+Collection is described in Chapter 3; for now, the only important thing about it is that it
+stores a collection of items that can be accessed with an enhanced for loop. Because of
+the enhanced for loop, the code should be identical, and the resulting code is shown in
+Figure 1.13. If we pass a Collection<Shape>, the code works. However, what happens if
+we pass a Collection<Square>? The answer depends on whether a Collection<Square> IS-A
+Collection<Shape>. Recall from Section 1.4.4 that the technical term for this is whether we
+have covariance.
+In Java, as we mentioned in Section 1.4.4, arrays are covariant. So Square[] IS-A
+Shape[]. On the one hand, consistency would suggest that if arrays are covariant, then
+collections should be covariant too. On the other hand, as we saw in Section 1.4.4, the
+covariance of arrays leads to code that compiles but then generates a runtime exception
+(an ArrayStoreException). Because the entire reason to have generics is to generate compiler
+1
+public static double totalArea( Shape [ ] arr )
+2
+{
+3
+double total = 0;
+4
+5
+for( Shape s : arr )
+6
+if( s != null )
+7
+total += s.area( );
+8
+9
+return total;
+10
+}
+Figure 1.12
+totalArea method for Shape[]
+20
+Chapter 1
+Introduction
+1
+public static double totalArea( Collection<Shape> arr )
+2
+{
+3
+double total = 0;
+4
+5
+for( Shape s : arr )
+6
+if( s != null )
+7
+total += s.area( );
+8
+9
+return total;
+10
+}
+Figure 1.13
+totalArea method that does not work if passed a Collection<Square>
+1
+public static double totalArea( Collection<? extends Shape> arr )
+2
+{
+3
+double total = 0;
+4
+5
+for( Shape s : arr )
+6
+if( s != null )
+7
+total += s.area( );
+8
+9
+return total;
+10
+}
+Figure 1.14
+totalArea method revised with wildcards that works if passed a
+Collection<Square>
+errors rather than runtime exceptions for type mismatches, generic collections are not
+covariant. As a result, we cannot pass a Collection<Square> as a parameter to the method
+in Figure 1.13.
+What we are left with is that generics (and the generic collections) are not covariant
+(which makes sense), but arrays are. Without additional syntax, users would tend to avoid
+collections because the lack of covariance makes the code less flexible.
+Java 5 makes up for this with wildcards. Wildcards are used to express subclasses
+(or superclasses) of parameter types. Figure 1.14 illustrates the use of wildcards with a
+bound to write a totalArea method that takes as parameter a Collection<T>, where T IS-A
+Shape. Thus, Collection<Shape> and Collection<Square> are both acceptable parameters.
+Wildcards can also be used without a bound (in which case extends Object is presumed)
+or with super instead of extends (to express superclass rather than subclass); there are also
+some other syntax uses that we do not discuss here.
+1.5.5 Generic Static Methods
+In some sense, the totalArea method in Figure 1.14 is generic, since it works for different
+types. But there is no specific type parameter list, as was done in the GenericMemoryCell
+1.5
+Implementing Generic Components Using Java 5 Generics
+21
+1
+public static <AnyType> boolean contains( AnyType [ ] arr, AnyType x )
+2
+{
+3
+for( AnyType val : arr )
+4
+if( x.equals( val ) )
+5
+return true;
+6
+7
+return false;
+8
+}
+Figure 1.15 Generic static method to search an array
+class declaration. Sometimes the specific type is important perhaps because one of the
+following reasons apply:
+1. The type is used as the return type.
+2. The type is used in more than one parameter type.
+3. The type is used to declare a local variable.
+If so, then an explicit generic method with type parameters must be declared.
+For instance, Figure 1.15 illustrates a generic static method that performs a sequential
+search for value x in array arr. By using a generic method instead of a nongeneric method
+that uses Object as the parameter types, we can get compile-time errors if searching for an
+Apple in an array of Shapes.
+The generic method looks much like the generic class in that the type parameter list
+uses the same syntax. The type parameters in a generic method precede the return type.
+1.5.6 Type Bounds
+Suppose we want to write a findMax routine. Consider the code in Figure 1.16. This code
+cannot work because the compiler cannot prove that the call to compareTo at line 6 is valid;
+compareTo is guaranteed to exist only if AnyType is Comparable. We can solve this problem
+1
+public static <AnyType> AnyType findMax( AnyType [ ] arr )
+2
+{
+3
+int maxIndex = 0;
+4
+5
+for( int i = 1; i < arr.length; i++ )
+6
+if( arr[ i ].compareTo( arr[ maxIndex ] ) > 0 )
+7
+maxIndex = i;
+8
+9
+return arr[ maxIndex ];
+10
+}
+Figure 1.16 Generic static method to find largest element in an array that does not work
+22
+Chapter 1
+Introduction
+1
+public static <AnyType extends Comparable<? super AnyType>>
+2
+AnyType findMax( AnyType [ ] arr )
+3
+{
+4
+int maxIndex = 0;
+5
+6
+for( int i = 1; i < arr.length; i++ )
+7
+if( arr[ i ].compareTo( arr[ maxIndex ] ) > 0 )
+8
+maxIndex = i;
+9
+10
+return arr[ maxIndex ];
+11
+}
+Figure 1.17 Generic static method to find largest element in an array. Illustrates a bounds
+on the type parameter
+by using a type bound. The type bound is specified inside the angle brackets <>, and it
+specifies properties that the parameter types must have. A naïve attempt is to rewrite the
+signature as
+public static <AnyType extends Comparable> ...
+This is naïve because, as we know, the Comparable interface is now generic. Although
+this code would compile, a better attempt would be
+public static <AnyType extends Comparable<AnyType>> ...
+However, this attempt is not satisfactory. To see the problem, suppose Shape implements Comparable<Shape>. Suppose Square extends Shape. Then all we know is that Square
+implements Comparable<Shape>. Thus, a Square IS-A Comparable<Shape>, but it IS-NOT-A
+Comparable<Square>!
+As a result, what we need to say is that AnyType IS-A Comparable<T> where T is a superclass of AnyType. Since we do not need to know the exact type T, we can use a wildcard.
+The resulting signature is
+public static <AnyType extends Comparable<? super AnyType>>
+Figure 1.17 shows the implementation of findMax. The compiler will accept arrays
+of types T only such that T implements the Comparable<S> interface, where T IS-A S.
+Certainly the bounds declaration looks like a mess. Fortunately, we won’t see anything
+more complicated than this idiom.
+1.5.7 Type Erasure
+Generic types, for the most part, are constructs in the Java language but not in the Virtual
+Machine. Generic classes are converted by the compiler to nongeneric classes by a process known as type erasure. The simplified version of what happens is that the compiler
+generates a raw class with the same name as the generic class with the type parameters
+removed. The type variables are replaced with their bounds, and when calls are made
+1.5
+Implementing Generic Components Using Java 5 Generics
+23
+to generic methods that have an erased return type, casts are inserted automatically. If a
+generic class is used without a type parameter, the raw class is used.
+One important consequence of type erasure is that the generated code is not much
+different than the code that programmers have been writing before generics and in fact is
+not any faster. The significant benefit is that the programmer does not have to place casts
+in the code, and the compiler will do significant type checking.
+1.5.8 Restrictions on Generics
+There are numerous restrictions on generic types. Every one of the restrictions listed here
+is required because of type erasure.
+Primitive Types
+Primitive types cannot be used for a type parameter. Thus GenericMemoryCell<int> is illegal.
+You must use wrapper classes.
+instanceof tests
+instanceof tests and typecasts work only with raw type. In the following code
+GenericMemoryCell<Integer> cell1 = new GenericMemoryCell<>( );
+cell1.write( 4 );
+Object cell = cell1;
+GenericMemoryCell<String> cell2 = (GenericMemoryCell<String>) cell;
+String s = cell2.read( );
+the typecast succeeds at runtime since all types are GenericMemoryCell. Eventually, a runtime error results at the last line because the call to read tries to return a String but cannot.
+As a result, the typecast will generate a warning, and a corresponding instanceof test is
+illegal.
+Static Contexts
+In a generic class, static methods and fields cannot refer to the class’s type variables since,
+after erasure, there are no type variables. Further, since there is really only one raw class,
+static fields are shared among the class’s generic instantiations.
+Instantiation of Generic Types
+It is illegal to create an instance of a generic type. If T is a type variable, the statement
+T obj = new T( );
+// Right-hand side is illegal
+is illegal. T is replaced by its bounds, which could be Object (or even an abstract class), so
+the call to new cannot make sense.
+Generic Array Objects
+It is illegal to create an array of a generic type. If T is a type variable, the statement
+T [ ] arr = new T[ 10 ];
+// Right-hand side is illegal
+24
+Chapter 1
+Introduction
+is illegal. T would be replaced by its bounds, which would probably be Object, and then the
+cast (generated by type erasure) to T[] would fail because Object[] IS-NOT-A T[]. Because
+we cannot create arrays of generic objects, generally we must create an array of the erased
+type and then use a typecast. This typecast will generate a compiler warning about an
+unchecked type conversion.
+Arrays of Parameterized Types
+Instantiation of arrays of parameterized types is illegal. Consider the following code:
+1
+GenericMemoryCell<String> [ ] arr1 = new GenericMemoryCell<>[ 10 ];
+2
+GenericMemoryCell<Double> cell = new GenericMemoryCell<>( ); cell.write( 4.5 );
+3
+Object [ ] arr2 = arr1;
+4
+arr2[ 0 ] = cell;
+5
+String s = arr1[ 0 ].read( );
+Normally, we would expect that the assignment at line 4, which has the wrong type,
+would generate an ArrayStoreException. However, after type erasure, the array type is
+GenericMemoryCell[], and the object added to the array is GenericMemoryCell, so there is
+no ArrayStoreException. Thus, this code has no casts, yet it will eventually generate a
+ClassCastException at line 5, which is exactly the situation that generics are supposed to
+avoid.
+1.6 Function Objects
+In Section 1.5, we showed how to write generic algorithms. As an example, the generic
+method in Figure 1.16 can be used to find the maximum item in an array.
+However, that generic method has an important limitation: It works only for objects
+that implement the Comparable interface, using compareTo as the basis for all comparison
+decisions. In many situations, this approach is not feasible. For instance, it is a stretch
+to presume that a Rectangle class will implement Comparable, and even if it does, the
+compareTo method that it has might not be the one we want. For instance, given a 2-by-10
+rectangle and a 5-by-5 rectangle, which is the larger rectangle? The answer would depend
+on whether we are using area or width to decide. Or perhaps if we are trying to fit the rectangle through an opening, the larger rectangle is the rectangle with the larger minimum
+dimension. As a second example, if we wanted to find the maximum string (alphabetically last) in an array of strings, the default compareTo does not ignore case distinctions, so
+“ZEBRA” would be considered to precede “alligator” alphabetically, which is probably not
+what we want.
+The solution in these situations is to rewrite findMax to accept two parameters: an array
+of objects and a comparison function that explains how to decide which of two objects is
+the larger and which is the smaller. In effect, the objects no longer know how to compare
+themselves; instead, this information is completely decoupled from the objects in the array.
+An ingenious way to pass functions as parameters is to notice that an object contains
+both data and methods, so we can define a class with no data and one method and pass
+1.6
+Function Objects
+25
+1
+// Generic findMax, with a function object.
+2
+// Precondition: a.size( ) > 0.
+3
+public static <AnyType>
+4
+AnyType findMax( AnyType [ ] arr, Comparator<? super AnyType> cmp )
+5
+{
+6
+int maxIndex = 0;
+7
+8
+for( int i = 1; i < arr.size( ); i++ )
+9
+if( cmp.compare( arr[ i ], arr[ maxIndex ] ) > 0 )
+10
+maxIndex = i;
+11
+12
+return arr[ maxIndex ];
+13
+}
+14
+15
+class CaseInsensitiveCompare implements Comparator<String>
+16
+{
+17
+public int compare( String lhs, String rhs )
+18
+{ return lhs.compareToIgnoreCase( rhs ); }
+19
+}
+20
+21
+class TestProgram
+22
+{
+23
+public static void main( String [ ] args )
+24
+{
+25
+String [ ] arr = { "ZEBRA", "alligator", "crocodile" };
+26
+System.out.println( findMax( arr, new CaseInsensitiveCompare( ) ) )
+27
+}
+28
+}
+Figure 1.18 Using a function object as a second parameter to findMax; output is ZEBRA
+an instance of the class. In effect, a function is being passed by placing it inside an object.
+This object is commonly known as a function object.
+Figure 1.18 shows the simplest implementation of the function object idea. findMax
+takes a second parameter, which is an object of type Comparator. The Comparator interface is specified in java.util and contains a compare method. This interface is shown in
+Figure 1.19.
+Any class that implements the Comparator<AnyType> interface type must have a method
+named compare that takes two parameters of the generic type (AnyType) and returns an int,
+following the same general contract as compareTo. Thus, in Figure 1.18, the call to compare
+at line 9 can be used to compare array items. The bounded wildcard at line 4 is used to
+signal that if we are finding the maximum in an array of items, the comparator must know
+how to compare items, or objects of the items’ supertype. To use this version of findMax, at
+line 26, we can see that findMax is called by passing an array of String and an object that
+26
+Chapter 1
+Introduction
+1
+package java.util;
+2
+3
+public interface Comparator<AnyType>
+4
+{
+5
+int compare( AnyType lhs, AnyType rhs );
+6
+}
+Figure 1.19 The Comparator interface
+implements Comparator<String>. This object is of type CaseInsensitiveCompare, which is a
+class we write.
+In Chapter 4, we will give an example of a class that needs to order the items it stores.
+We will write most of the code using Comparable and show the adjustments needed to use
+the function objects. Elsewhere in the book, we will avoid the detail of function objects to
+keep the code as simple as possible, knowing that it is not difficult to add function objects
+later.
+Summary
+This chapter sets the stage for the rest of the book. The time taken by an algorithm confronted with large amounts of input will be an important criterion for deciding if it is a
+good algorithm. (Of course, correctness is most important.) Speed is relative. What is fast
+for one problem on one machine might be slow for another problem or a different machine.
+We will begin to address these issues in the next chapter and will use the mathematics
+discussed here to establish a formal model.
+Exercises
+1.1
+Write a program to solve the selection problem. Let k = N/2. Draw a table showing
+the running time of your program for various values of N.
+1.2
+Write a program to solve the word puzzle problem.
+1.3
+Write a method to output an arbitrary double number (which might be negative)
+using only printDigit for I/O.
+1.4
+C allows statements of the form
+#include filename
+which reads filename and inserts its contents in place of the include statement.
+Include statements may be nested; in other words, the file filename may itself contain an include statement, but, obviously, a file can’t include itself in any chain.
+Write a program that reads in a file and outputs the file as modified by the include
+statements.
+Exercises
+27
+1.5
+Write a recursive method that returns the number of 1’s in the binary representation
+of N. Use the fact that this is equal to the number of 1’s in the representation of N/2,
+plus 1, if N is odd.
+1.6
+Write the routines with the following declarations:
+public
+void permute( String str );
+private void permute( char [ ] str, int low, int high );
+The first routine is a driver that calls the second and prints all the permutations of
+the characters in String str. If str is "abc", then the strings that are output are abc,
+acb, bac, bca, cab, and cba. Use recursion for the second routine.
+1.7
+Prove the following formulas:
+a. log X < X for all X > 0
+b. log(AB) = B log A
+1.8
+Evaluate the following sums:
+a. ∞
+i=0
+1
+4i
+b. ∞
+i=0
+i
+4i
+⋆c. ∞
+i=0
+i2
+4i
+⋆⋆d. ∞
+i=0
+iN
+4i
+1.9
+Estimate
+N
+
+i=⌊N/2⌋
+1
+i
+⋆1.10
+What is 2100 (mod 5)?
+1.11
+Let Fi be the Fibonacci numbers as defined in Section 1.2. Prove the following:
+a. N−2
+i=1 Fi = FN −2
+b. FN < φN, with φ = (1 +
+√
+5)/2
+⋆⋆c. Give a precise closed-form expression for FN.
+1.12
+Prove the following formulas:
+a. N
+i=1(2i −1) = N2
+b. N
+i=1i3 =
+N
+i=1i
+2
+1.13
+Design a generic class, Collection, that stores a collection of Objects (in an array),
+along with the current size of the collection. Provide public methods isEmpty,
+makeEmpty, insert, remove, and isPresent. isPresent(x) returns true if and only if
+an Object that is equal to x (as defined by equals) is present in the collection.
+1.14
+Design a generic class, OrderedCollection, that stores a collection of Comparables
+(in an array), along with the current size of the collection. Provide public methods
+isEmpty, makeEmpty, insert, remove, findMin, and findMax. findMin and findMax return
+references to the smallest and largest, respectively, Comparable in the collection (or
+null if the collection is empty).
+28
+Chapter 1
+Introduction
+1.15
+Define a Rectangle class that provides getLength and getWidth methods. Using the
+findMax routines in Figure 1.18, write a main that creates an array of Rectangle
+and finds the largest Rectangle first on the basis of area, and then on the basis of
+perimeter.
+References
+There are many good textbooks covering the mathematics reviewed in this chapter. A small
+subset is [1], [2], [3], [11], [13], and [14]. Reference [11] is specifically geared toward the
+analysis of algorithms. It is the first volume of a three-volume series that will be cited
+throughout this text. More advanced material is covered in [8].
+Throughout this book we will assume a knowledge of Java [4], [6], [7]. The material
+in this chapter is meant to serve as an overview of the features that we will use in this
+text. We also assume familiarity with recursion (the recursion summary in this chapter is
+meant to be a quick review). We will attempt to provide hints on its use where appropriate
+throughout the textbook. Readers not familiar with recursion should consult [14] or any
+good intermediate programming textbook.
+General programming style is discussed in several books. Some of the classics are [5],
+[9], and [10].
+1. M. O. Albertson and J. P. Hutchinson, Discrete Mathematics with Algorithms, John Wiley &
+Sons, New York, 1988.
+2. Z. Bavel, Math Companion for Computer Science, Reston Publishing Co., Reston, Va., 1982.
+3. R. A. Brualdi, Introductory Combinatorics, North-Holland, New York, 1977.
+4. G. Cornell and C. S. Horstmann, Core Java, Vol. I, 8th ed., Prentice Hall, Upper Saddle
+River, N.J., 2009.
+5. E. W. Dijkstra, A Discipline of Programming, Prentice Hall, Englewood Cliffs, N.J., 1976.
+6. D. Flanagan, Java in a Nutshell, 5th ed., O’Reilly and Associates, Sebastopol, Calif., 2005.
+7. J. Gosling, B. Joy, G. Steele, and G. Bracha, The Java Language Specification, 3d ed., AddisonWesley, Reading, Mass., 2005.
+8. R. L. Graham, D. E. Knuth, and O. Patashnik, Concrete Mathematics, Addison-Wesley,
+Reading, Mass., 1989.
+9. D. Gries, The Science of Programming, Springer-Verlag, New York, 1981.
+10. B. W. Kernighan and P. J. Plauger, The Elements of Programming Style, 2d ed., McGraw-Hill,
+New York, 1978.
+11. D. E. Knuth, The Art of Computer Programming, Vol. 1: Fundamental Algorithms, 3d ed.,
+Addison-Wesley, Reading, Mass., 1997.
+12. F. S. Roberts, Applied Combinatorics, Prentice Hall, Englewood Cliffs, N.J., 1984.
+13. A. Tucker, Applied Combinatorics, 2d ed., John Wiley & Sons, New York, 1984.
+14. M. A. Weiss, Data Structures and Problem Solving Using Java, 4th ed., Addison-Wesley,
+Boston, Mass., 2010.

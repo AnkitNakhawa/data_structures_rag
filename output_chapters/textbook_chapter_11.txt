@@ -1,0 +1,1296 @@
+C H A P T E R 11
+Amortized Analysis
+In this chapter, we will analyze the running times for several of the advanced data structures
+that have been presented in Chapters 4 and 6. In particular, we will consider the worst-case
+running time for any sequence of M operations. This contrasts with the more typical
+analysis, in which a worst-case bound is given for any single operation.
+As an example, we have seen that AVL trees support the standard tree operations in
+O(log N) worst-case time per operation. AVL trees are somewhat complicated to implement,
+not only because there are a host of cases, but also because height balance information must
+be maintained and updated correctly. The reason that AVL trees are used is that a sequence
+of (N) operations on an unbalanced search tree could require (N2) time, which would
+be expensive. For search trees, the O(N) worst-case running time of an operation is not the
+real problem. The major problem is that this could happen repeatedly. Splay trees offer a
+pleasant alternative. Although any operation can still require (N) time, this degenerate
+behavior cannot occur repeatedly, and we can prove that any sequence of M operations
+takes O(M log N) worst-case time (total). Thus, in the long run this data structure behaves
+as though each operation takes O(log N). We call this an amortized time bound.
+Amortized bounds are weaker than the corresponding worst-case bounds, because
+there is no guarantee for any single operation. Since this is generally not important, we
+are willing to sacrifice the bound on a single operation, if we can retain the same bound
+for the sequence of operations and at the same time simplify the data structure. Amortized
+bounds are stronger than the equivalent average-case bound. For instance, binary search
+trees have O(log N) average time per operation, but it is still possible for a sequence of M
+operations to take O(MN) time.
+Because deriving an amortized bound requires us to look at an entire sequence of
+operations instead of just one, we expect that the analysis will be more tricky. We will see
+that this expectation is generally realized.
+In this chapter we shall
+r Analyze the binomial queue operations.
+r Analyze skew heaps.
+r Introduce and analyze the Fibonacci heap.
+r Analyze splay trees.
+513
+514
+Chapter 11
+Amortized Analysis
+11.1 An Unrelated Puzzle
+Consider the following puzzle: Two kittens are placed on opposite ends of a football field,
+100 yards apart. They walk toward each other at the speed of 10 yards per minute. At the
+same time, their mother is at one end of the field. She can run at 100 yards per minute.
+The mother runs from one kitten to the other, making turns with no loss of speed, until
+the kittens (and thus the mother) meet at midfield. How far does the mother run?
+It is not hard to solve this puzzle with a brute-force calculation. We leave the details
+to you, but one expects that this calculation will involve computing the sum of an infinite
+geometric series. Although this straightforward calculation will lead to an answer, it turns
+out that a much simpler solution can be arrived at by introducing an extra variable,
+namely, time.
+Because the kittens are 100 yards apart and approach each other at a combined velocity
+of 20 yards per minute, it takes them five minutes to get to midfield. Since the mother runs
+100 yards per minute, her total is 500 yards.
+This puzzle illustrates the point that sometimes it is easier to solve a problem indirectly
+than directly. The amortized analyses that we will perform will use this idea. We will introduce an extra variable, known as the potential, to allow us to prove results that seem very
+difficult to establish otherwise.
+11.2 Binomial Queues
+The first data structure we will look at is the binomial queue of Chapter 6, which we now
+review briefly. Recall that a binomial tree B0 is a one-node tree, and for k > 0, the binomial
+tree Bk is built by melding two binomial trees Bk−1 together. Binomial trees B0 through B4
+are shown in Figure 11.1.
+The rank of a node in a binomial tree is equal to the number of children; in particular,
+the rank of the root of Bk is k. A binomial queue is a collection of heap-ordered binomial
+trees, in which there can be at most one binomial tree Bk for any k. Two binomial queues,
+H1 and H2, are shown in Figure 11.2.
+The most important operation is merge. To merge two binomial queues, an operation
+similar to addition of binary integers is performed: At any stage we may have zero, one,
+two, or possibly three Bk trees, depending on whether or not the two priority queues
+contain a Bk tree and whether or not a Bk tree is carried over from the previous step. If
+there is zero or one Bk tree, it is placed as a tree in the resultant binomial queue. If there are
+two Bk trees, they are melded into a Bk+1 tree and carried over; if there are three Bk trees,
+one is placed as a tree in the binomial queue and the other two are melded and carried
+over. The result of merging H1 and H2 is shown in Figure 11.3.
+Insertion is performed by creating a one-node binomial queue and performing a merge.
+The time to do this is M + 1, where M represents the smallest type of binomial tree BM not
+present in the binomial queue. Thus, insertion into a binomial queue that has a B0 tree but
+no B1 tree requires two steps. Deletion of the minimum is accomplished by removing the
+11.2
+Binomial Queues
+515
+B 3
+B 2
+B 1
+B 0
+B 4
+Figure 11.1 Binomial trees B0, B1, B2, B3, and B4
+12
+21
+24
+65
+H 2:
+H 1:
+13
+23
+24
+65
+51
+14
+26
+16
+18
+Figure 11.2 Two binomial queues H1 and H2
+H 3: 13
+23
+24
+65
+51
+12
+21
+24
+65
+14
+26
+16
+18
+Figure 11.3 Binomial queue H3: the result of merging H1 and H2
+516
+Chapter 11
+Amortized Analysis
+minimum and splitting the original binomial queue into two binomial queues, which are
+then merged. A less terse explanation of these operations is given in Chapter 6.
+We consider a very simple problem first. Suppose we want to build a binomial queue
+of N elements. We know that building a binary heap of N elements can be done in O(N),
+so we expect a similar bound for binomial queues.
+Claim.
+A binomial queue of N elements can be built by N successive insertions in O(N) time.
+The claim, if true, would give an extremely simple algorithm. Since the worst-case
+time for each insertion is O(log N), it is not obvious that the claim is true. Recall that if this
+algorithm were applied to binary heaps, the running time would be O(N log N).
+To prove the claim, we could do a direct calculation. To measure the running time, we
+define the cost of each insertion to be one time unit plus an extra unit for each linking step.
+Summing this cost over all insertions gives the total running time. This total is N units plus
+the total number of linking steps. The 1st, 3rd, 5th, and all odd-numbered steps require no
+linking steps, since there is no B0 present at the time of insertion. Thus, half the insertions
+require no linking steps. A quarter of the insertions require only one linking step (2nd,
+6th, 10th, and so on). An eighth requires two, and so on. We could add this all up and
+bound the number of linking steps by N, proving the claim. This brute-force calculation
+will not help when we try to analyze a sequence of operations that include more than just
+insertions, so we will use another approach to prove this result.
+Consider the result of an insertion. If there is no B0 tree present at the time of the
+insertion, then the insertion costs a total of one unit, using the same accounting as above.
+The result of the insertion is that there is now a B0 tree, and thus we have added one tree to
+the forest of binomial trees. If there is a B0 tree but no B1 tree, then the insertion costs two
+units. The new forest will have a B1 tree but will no longer have a B0 tree, so the number
+of trees in the forest is unchanged. An insertion that costs three units will create a B2 tree
+but destroy a B0 and B1 tree, yielding a net loss of one tree in the forest. In fact, it is easy to
+see that, in general, an insertion that costs c units results in a net increase of 2 −c trees in
+the forest, because a Bc−1 tree is created but all Bi trees 0 ≤i < c −1 are removed. Thus,
+expensive insertions remove trees, while cheap insertions create trees.
+Let Ci be the cost of the ith insertion. Let Ti be the number of trees after the ith
+insertion. T0 = 0 is the number of trees initially. Then we have the invariant
+Ci + (Ti −Ti−1) = 2
+(11.1)
+We then have
+C1 + (T1 −T0) = 2
+C2 + (T2 −T1) = 2
+...
+CN−1 + (TN−1 −TN−2) = 2
+CN + (TN −TN−1) = 2
+11.2
+Binomial Queues
+517
+If we add all these equations, most of the Ti terms cancel, leaving
+N
+
+i=1
+Ci + TN −T0 = 2N
+or equivalently,
+N
+
+i=1
+Ci = 2N −(TN −T0)
+Recall that T0 = 0 and TN, the number of trees after the N insertions, is certainly not
+negative, so (TN −T0) is not negative. Thus
+N
+
+i=1
+Ci ≤2N
+which proves the claim.
+During the buildBinomialQueue routine, each insertion had a worst-case time of
+O(log N), but since the entire routine used at most 2N units of time, the insertions behaved
+as though each used no more than two units each.
+This example illustrates the general technique we will use. The state of the data structure at any time is given by a function known as the potential. The potential function is not
+maintained by the program but rather is an accounting device that will help with the analysis. When operations take less time than we have allocated for them, the unused time is
+“saved” in the form of a higher potential. In our example, the potential of the data structure
+is simply the number of trees. In the analysis above, when we have insertions that use only
+one unit instead of the two units that are allocated, the extra unit is saved for later by an
+increase in potential. When operations occur that exceed the allotted time, then the excess
+time is accounted for by a decrease in potential. One may view the potential as representing a savings account. If an operation uses less than its allotted time, the difference is saved
+for use later on by more expensive operations. Figure 11.4 shows the cumulative running
+time used by buildBinomialQueue over a sequence of insertions. Observe that the running
+time never exceeds 2N and that the potential in the binomial queue after any insertion
+measures the amount of savings.
+Once a potential function is chosen, we write the main equation:
+Tactual + Potential = Tamortized
+(11.2)
+Tactual, the actual time of an operation, represents the exact (observed) amount of time
+required to execute a particular operation. In a binary search tree, for example, the actual
+time to perform a contains(x) is 1 plus the depth of the node containing x. If we sum the
+basic equation over the entire sequence, and if the final potential is at least as large as the
+initial potential, then the amortized time is an upper bound on the actual time used during
+the execution of the sequence. Notice that while Tactual varies from operation to operation,
+Tamortized is stable.
+Picking a potential function that proves a meaningful bound is a very tricky task; there
+is no one method that is used. Generally, many potential functions are tried before the one
+518
+Chapter 11
+Amortized Analysis
+0
+4
+8
+12
+16
+20
+24
+28
+32
+36
+40
+44
+0
+23
+46
+69
+92
+115
+2N
+Total
+Time
+Total Potential
+Figure 11.4 A sequence of N inserts
+that works is found. Nevertheless, the discussion above suggests a few rules, which tell us
+the properties that good potential functions have. The potential function should
+r Always assume its minimum at the start of the sequence. A popular method of choosing
+potential functions is to ensure that the potential function is initially 0, and always
+nonnegative. All the examples that we will encounter use this strategy.
+r Cancel a term in the actual time. In our case, if the actual cost was c, then the potential
+change was 2 −c. When these are added, an amortized cost of 2 is obtained. This is
+shown in Figure 11.5.
+We can now perform a complete analysis of binomial queue operations.
+Theorem 11.1.
+The amortized running times of insert, deleteMin, and merge are O(1), O(log N), and
+O(log N), respectively, for binomial queues.
+Proof.
+The potential function is the number of trees. The initial potential is 0, and the
+potential is always nonnegative, so the amortized time is an upper bound on the actual
+time. The analysis for insert follows from the argument above. For merge, assume the
+two queues have N1 and N2 nodes with T1 and T2 trees, respectively. Let N = N1+N2.
+The actual time to perform the merge is O(log(N1) + log(N2)) = O(log N). After
+the merge, there can be at most log N trees, so the potential can increase by at most
+O(log N). This gives an amortized bound of O(log N). The deleteMin bound follows in
+a similar manner.
+11.3
+Skew Heaps
+519
+0
+4
+8
+12
+16
+20
+24
+28
+32
+36
+40
+44
+48
+−10
+−8
+−6
+−4
+−2
+0
+2
+4
+6
+8
+10
+insert cost
+Potential Change
+Figure 11.5 The insertion cost and potential change for each operation in a sequence
+11.3 Skew Heaps
+The analysis of binomial queues is a fairly easy example of an amortized analysis. We now
+look at skew heaps. As is common with many of our examples, once the right potential
+function is found, the analysis is easy. The difficult part is choosing a meaningful potential
+function.
+Recall that for skew heaps, the key operation is merging. To merge two skew heaps, we
+merge their right paths and make this the new left path. For each node on the new path,
+except the last, the old left subtree is attached as the right subtree. The last node on the
+new left path is known to not have a right subtree, so it is silly to give it one. The bound
+does not depend on this exception, and if the routine is coded recursively, this is what will
+happen naturally. Figure 11.6 shows the result of merging two skew heaps.
+Suppose we have two heaps, H1 and H2, and there are r1 and r2 nodes on their respective right paths. Then the actual time to perform the merge is proportional to r1 +r2, so we
+will drop the Big-Oh notation and charge one unit of time for each node on the paths. Since
+the heaps have no structure, it is possible that all the nodes in both heaps lie on the right
+path, and this would give a (N) worst-case bound to merge the heaps (Exercise 11.3 asks
+you to construct an example). We will show that the amortized time to merge two skew
+heaps is O(log N).
+What is needed is some sort of a potential function that captures the effect of skew heap
+operations. Recall that the effect of a merge is that every node on the right path is moved
+to the left path, and its old left child becomes the new right child. One idea might be to
+classify each node as a right node or left node, depending on whether or not it is a right
+child, and use the number of right nodes as a potential function. Although the potential is
+520
+Chapter 11
+Amortized Analysis
+10
+6
+16
+14
+3
+9
+12
+8
+17
+2
+1
+11
+5
+7
+17
+8
+9
+12
+7
+5
+11
+3
+10
+6
+16
+14
+1
+2
++
+Figure 11.6 Merging of two skew heaps
+initially 0 and always nonnegative, the problem is that the potential does not decrease after
+a merge and thus does not adequately reflect the savings in the data structure. The result
+is that this potential function cannot be used to prove the desired bound.
+A similar idea is to classify nodes as either heavy or light, depending on whether or not
+the right subtree of any node has more nodes than the left subtree.
+Definition 11.1.
+A node p is heavy if the number of descendants of p’s right subtree is at least half of the
+number of descendants of p, and light otherwise. Note that the number of descendants
+of a node includes the node itself.
+As an example, Figure 11.7 shows a skew heap. The nodes with values 15, 3, 6, 12,
+and 7 are heavy, and all other nodes are light.
+The potential function we will use is the number of heavy nodes in the (collection of)
+heaps. This seems like a good choice, because a long right path will contain an inordinate
+3
+15
+21
+14
+23
+6
+12
+7
+8
+25
+26
+18
+24
+33
+17
+18
+Figure 11.7 Skew heap—heavy nodes are 3, 6, 7, 12, and 15
+11.3
+Skew Heaps
+521
+number of heavy nodes. Because nodes on this path have their children swapped, these
+nodes will be converted to light nodes as a result of the merge.
+Theorem 11.2.
+The amortized time to merge two skew heaps is O(log N).
+Proof.
+Let H1 and H2 be the two heaps, with N1 and N2 nodes respectively. Suppose the right
+path of H1 has l1 light nodes and h1 heavy nodes, for a total of l1 + h1. Likewise, H2
+has l2 light and h2 heavy nodes on its right path, for a total of l2 + h2 nodes.
+If we adopt the convention that the cost of merging two skew heaps is the total
+number of nodes on their right paths, then the actual time to perform the merge is
+l1 + l2 + h1 + h2. Now the only nodes whose heavy/light status can change are nodes
+that are initially on the right path (and wind up on the left path), since no other nodes
+have their subtrees altered. This is shown by the example in Figure 11.8.
+If a heavy node is initially on the right path, then after the merge it must become
+a light node. The other nodes that were on the right path were light and may or may
+not become heavy, but since we are proving an upper bound, we will have to assume
+the worst, which is that they become heavy and increase the potential. Then the net
+change in the number of heavy nodes is at most l1 + l2 −h1 −h2. Adding the actual
+time and the potential change [Equation (11.2)] gives an amortized bound of 2(l1+l2).
+Now we must show that l1 + l2 = O(log N). Since l1 and l2 are the number of light
+nodes on the original right paths, and the right subtree of a light node is less than half
+the size of the tree rooted at the light node, it follows directly that the number of light
+nodes on the right path is at most log N1 + log N2, which is O(log N).
+The proof is completed by noting that the initial potential is 0 and that the potential
+is always nonnegative. It is important to verify this, since otherwise the amortized time
+does not bound the actual time and is meaningless.
+Since the insert and deleteMin operations are basically just merges, they also have
+O(log N) amortized bounds.
+10
+6
+16
+14
+3
+9
+12
+8
+17
+2
+1
+11
+5
+7
+17
+8
+9
+12
+7
+5
+11
+3
+10
+6
+16
+14
+1
+2
++
+L
+L
+L
+H
+L
+L
+L
+L
+L
+L
+H
+L
+Figure 11.8 Change in heavy/light status after a merge
+522
+Chapter 11
+Amortized Analysis
+11.4 Fibonacci Heaps
+In Section 9.3.2, we showed how to use priority queues to improve on the naïve O(|V|2)
+running time of Dijkstra’s shortest-path algorithm. The important observation was that the
+running time was dominated by |E| decreaseKey operations and |V| insert and deleteMin
+operations. These operations take place on a set of size at most |V|. By using a binary heap,
+all these operations take O(log |V|) time, so the resulting bound for Dijkstra’s algorithm can
+be reduced to O(|E| log |V|).
+In order to lower this time bound, the time required to perform the decreaseKey operation must be improved. d-heaps, which were described in Section 6.5, give an O(logd |V|)
+time bound for the decreaseKey operation as well as for insert, but an O(d logd |V|) bound
+for deleteMin. By choosing d to balance the costs of |E| decreaseKey operations with |V|
+deleteMin operations, and remembering that d must always be at least 2, we see that a good
+choice for d is
+d = max(2, ⌊|E|/|V|⌋)
+This improves the time bound for Dijkstra’s algorithm to
+O(|E| log(2+⌊|E|/|V|⌋) |V|)
+The Fibonacci heap is a data structure that supports all the basic heap operations
+in O(1) amortized time, with the exception of deleteMin and delete, which take O(log N)
+amortized time. It immediately follows that the heap operations in Dijkstra’s algorithm will
+require a total of O(|E| + |V| log |V|) time.
+Fibonacci heaps1 generalize binomial queues by adding two new concepts:
+A different implementation of decreaseKey: The method we have seen before is to percolate the element up toward the root. It does not seem reasonable to expect an O(1)
+amortized bound for this strategy, so a new method is needed.
+Lazy merging: Two heaps are merged only when it is required to do so. This is similar
+to lazy deletion. For lazy merging, merges are cheap, but because lazy merging does not
+actually combine trees, the deleteMin operation could encounter lots of trees, making
+that operation expensive. Any one deleteMin could take linear time, but it is always
+possible to charge the time to previous merge operations. In particular, an expensive
+deleteMin must have been preceded by a large number of unduly cheap merges, which
+were able to store up extra potential.
+11.4.1 Cutting Nodes in Leftist Heaps
+In binary heaps, the decreaseKey operation is implemented by lowering the value at a node
+and then percolating it up toward the root until heap order is established. In the worst
+1 The name comes from a property of this data structure, which we will prove later in the section.
+11.4
+Fibonacci Heaps
+523
+1
+2
+3
+4
+...
+N−4
+N−3
+N−2
+N−1
+Figure 11.9 Decreasing N −1 to 0 via percolate up would take (N) time
+31
+18
+9
+10
+4
+15
+8
+5
+21
+11
+6
+2
+12
+11
+18
+17
+Figure 11.10 Sample leftist heap H
+case, this can take O(log N) time, which is the length of the longest path toward the root
+in a balanced tree.
+This strategy does not work if the tree that represents the priority queue does not
+have O(log N) depth. As an example, if this strategy is applied to leftist heaps, then the
+decreaseKey operation could take (N) time, as the example in Figure 11.9 shows.
+We see that for leftist heaps, another strategy is needed for the decreaseKey operation.
+Our example will be the leftist heap in Figure 11.10. Suppose we want to decrease the key
+with value 9 down to 0. If we make the change, we find that we have created a violation of
+heap order, which is indicated by a dashed line in Figure 11.11.
+We do not want to percolate the 0 to the root, because, as we have seen, there are cases
+where this could be expensive. The solution is to cut the heap along the dashed line, thus
+creating two trees, and then merge the two trees back into one. Let X be the node to which
+the decreaseKey operation is being applied, and let P be its parent. After the cut, we have
+524
+Chapter 11
+Amortized Analysis
+31
+18
+0
+10
+4
+15
+8
+5
+21
+11
+6
+2
+12
+11
+18
+17
+P
+X
+Figure 11.11 Decreasing 9 to 0 creates a heap order violation
+31
+18
+0
+10
+4
+15
+8
+5
+21
+11
+6
+2
+12
+11
+18
+17
+X
+P
+H 1
+T2
+Figure 11.12 The two trees after the cut
+two trees, namely, H1 with root X, and T2, which is the original tree with H1 removed. The
+situation is shown in Figure 11.12.
+If these two trees were both leftist heaps, then they could be merged in O(log N) time,
+and we would be done. It is easy to see that H1 is a leftist heap, since none of its nodes
+have had any changes in their descendants. Thus, since all of its nodes originally satisfied
+the leftist property, they still must.
+Nevertheless, it seems that this scheme will not work, because T2 is not necessarily
+leftist. However, it is easy to reinstate the leftist heap property by using two observations:
+r Only nodes on the path from P to the root of T2 can be in violation of the leftist heap
+property; these can be fixed by swapping children.
+r Since the maximum right path length has at most ⌊log(N + 1)⌋nodes, we only need to
+check the first ⌊log(N + 1)⌋nodes on the path from P to the root of T2. Figure 11.13
+shows H1 and T2 after T2 is converted to a leftist heap.
+11.4
+Fibonacci Heaps
+525
+31
+18
+0
+10
+4
+15
+8
+5
+21
+11
+6
+2
+12
+11
+18
+17
+H 1
+H 2
+Figure 11.13 T2 converted to the leftist heap H2
+31
+18
+0
+10
+4
+15
+8
+5
+21
+11
+6
+2
+12
+11
+18
+17
+Figure 11.14
+decreaseKey(X, 9) completed by merging H1 and H2
+Because we can convert T2 to the leftist heap H2 in O(log N) steps, and then merge H1
+and H2, we have an O(log N) algorithm for performing the decreaseKey operation in leftist
+heaps. The heap that results in our example is shown in Figure 11.14.
+11.4.2 Lazy Merging for Binomial Queues
+The second idea that is used by Fibonacci heaps is lazy merging. We will apply this idea
+to binomial queues and show that the amortized time to perform a merge operation (as well
+as insertion, which is a special case) is O(1). The amortized time for deleteMin will still be
+O(log N).
+The idea is as follows: To merge two binomial queues, merely concatenate the two lists
+of binomial trees, creating a new binomial queue. This new queue may have several trees of
+the same size, so it violates the binomial queue property. We will call this a lazy binomial
+queue in order to maintain consistency. This is a fast operation that always takes constant
+(worst-case) time. As before, an insertion is done by creating a one-node binomial queue
+and merging. The difference is that the merge is lazy.
+526
+Chapter 11
+Amortized Analysis
+10
+5
+6
+9
+3
+21
+15
+11
+4
+8
+7
+20
+18
+Figure 11.15 Lazy binomial queue
+10
+5
+6
+9
+21
+15
+11
+4
+8
+7
+20
+18
+Figure 11.16 Lazy binomial queue after removing the smallest element (3)
+The deleteMin operation is much more painful, because it is where we finally convert
+the lazy binomial queue back into a standard binomial queue, but, as we will show, it is
+still O(log N) amortized time—but not O(log N) worst-case time, as before. To perform a
+deleteMin, we find (and eventually return) the minimum element. As before, we delete it
+from the queue, making each of its children new trees. We then merge all the trees into a
+binomial queue by merging two equal-sized trees until it is no longer possible.
+As an example, Figure 11.15 shows a lazy binomial queue. In a lazy binomial queue,
+there can be more than one tree of the same size. To perform the deleteMin, we remove the
+smallest element, as before, and obtain the tree in Figure 11.16.
+We now have to merge all the trees and obtain a standard binomial queue. A standard
+binomial queue has at most one tree of each rank. In order to do this efficiently, we must be
+able to perform the merge in time proportional to the number of trees present (T) (or log N,
+whichever is larger). To do this, we form an array of lists, L0, L1, . . . , LRmax+1, where Rmax
+is the rank of the largest tree. Each list LR contains all of the trees of rank R. The procedure
+in Figure 11.17 is then applied.
+1
+for( R = 0; R <= ⌊log N⌋; R++ )
+2
+while( |LR| >= 2 )
+3
+{
+4
+Remove two trees from LR;
+5
+Merge the two trees into a new tree;
+6
+Add the new tree to LR+1;
+7
+}
+Figure 11.17 Procedure to reinstate a binomial queue
+11.4
+Fibonacci Heaps
+527
+10
+5
+6
+9
+21
+15
+11
+4
+8
+7
+20
+18
+10
+5
+6
+9
+21
+15
+11
+4
+8
+7
+20
+18
+10
+5
+6
+9
+21
+15
+11
+4
+8
+7
+20
+18
+10
+5
+6
+9
+21
+15
+11
+4
+8
+7
+20
+18
+Figure 11.18 Combining the binomial trees into a binomial queue
+Each time through the loop, at lines 4 through 6, the total number of trees is reduced
+by 1. This means that this part of the code, which takes constant time per execution, can
+only be performed T −1 times, where T is the number of trees. The for loop counters and
+tests at the end of the while loop take O(log N) time, so the running time is O(T + log N),
+as required. Figure 11.18 shows the execution of this algorithm on the previous collection
+of binomial trees.
+Amortized Analysis of Lazy Binomial Queues
+To carry out the amortized analysis of lazy binomial queues, we will use the same potential
+function that was used for standard binomial queues. Thus, the potential of a lazy binomial
+queue is the number of trees.
+Theorem 11.3.
+The amortized running times of merge and insert are both O(1) for lazy binomial
+queues. The amortized running time of deleteMin is O(log N).
+528
+Chapter 11
+Amortized Analysis
+Proof.
+The potential function is the number of trees in the collection of binomial queues. The
+initial potential is 0, and the potential is always nonnegative. Thus, over a sequence of
+operations, the total amortized time is an upper bound on the total actual time.
+For the merge operation, the actual time is constant, and the number of trees in
+the collection of binomial queues is unchanged, so, by Equation (11.2), the amortized
+time is O(1).
+For the insert operation, the actual time is constant, and the number of trees can
+increase by at most 1, so the amortized time is O(1).
+The deleteMin operation is more complicated. Let R be the rank of the tree that
+contains the minimum element, and let T be the number of trees. Thus, the potential at the start of the deleteMin operation is T. To perform a deleteMin, the children
+of the smallest node are split off into separate trees. This creates T + R trees, which
+must be merged into a standard binomial queue. The actual time to perform this is
+T + R + log N, if we ignore the constant in the Big-Oh notation, by the argument
+above.2 Once this is done, there can be at most log N trees remaining, so the potential
+function can increase by at most (log N) −T. Adding the actual time and the change
+in potential gives an amortized bound of 2 log N + R. Since all the trees are binomial
+trees, we know that R ≤log N. Thus we arrive at an O(log N) amortized time bound
+for the deleteMin operation.
+11.4.3 The Fibonacci Heap Operations
+As we mentioned before, the Fibonacci heap combines the leftist heap decreaseKey operation with the lazy binomial queue merge operation. Unfortunately, we cannot use both
+operations without a slight modification. The problem is that if arbitrary cuts are made
+in the binomial trees, the resulting forest will no longer be a collection of binomial trees.
+Because of this, it will no longer be true that the rank of every tree is at most ⌊log N⌋. Since
+the amortized bound for deleteMin in lazy binomial queues was shown to be 2 log N + R,
+we need R = O(log N) for the deleteMin bound to hold.
+In order to ensure that R = O(log N), we apply the following rules to all nonroot nodes:
+r Mark a (nonroot) node the first time that it loses a child (because of a cut).
+r If a marked node loses another child, then cut it from its parent. This node now
+becomes the root of a separate tree and is no longer marked. This is called a cascading
+cut, because several of these could occur in one decreaseKey operation.
+Figure 11.19 shows one tree in a Fibonacci heap prior to a decreaseKey operation.
+When the node with key 39 is changed to 12, the heap order is violated. Therefore, the
+node is cut from its parent, becoming the root of a new tree. Since the node containing 33
+is marked, this is its second lost child, and thus it is cut from its parent (10). Now 10 has
+2 We can do this because we can place the constant implied by the Big-Oh notation in the potential function
+and still get the cancellation of terms, which is needed in the proof.
+11.4
+Fibonacci Heaps
+529
+35
+33*
+41
+39
+46
+10*
+13
+6
+34
+5
+24
+23
+22
+13
+17*
+3
+8*
+47
+11*
+19
+Figure 11.19 A tree in the Fibonacci heap prior to decreasing 39 to 12
+35
+33
+41
+12
+46
+10
+13
+6
+34
+5*
+24
+23
+22
+13
+17*
+3
+8*
+47
+11*
+19
+Figure 11.20 The resulting segment of the Fibonacci heap after the decreaseKey operation
+lost its second child, so it is cut from 5. The process stops here, since 5 was unmarked.
+The node 5 is now marked. The result is shown in Figure 11.20.
+Notice that 10 and 33, which used to be marked nodes, are no longer marked, because
+they are now root nodes. This will be a crucial observation in our proof of the time bound.
+11.4.4 Proof of the Time Bound
+Recall that the reason for marking nodes is that we needed to bound the rank (number of
+children) R of any node. We will now show that any node with N descendants has rank
+O(log N).
+Lemma 11.1.
+Let X be any node in a Fibonacci heap. Let ci be the ith oldest child of X. Then the
+rank of ci is at least i −2.
+Proof.
+At the time when ci was linked to X, X already had (older) children c1, c2, . . . , ci−1.
+Thus, X had at least i −1 children when it linked to ci. Since nodes are linked only
+if they have the same rank, it follows that at the time that ci was linked to X, ci had
+530
+Chapter 11
+Amortized Analysis
+at least i −1 children. Since that time, it could have lost at most one child, or else it
+would have been cut from X. Thus, ci has at least i −2 children.
+From Lemma 11.1, it is easy to show that any node of rank R must have a lot of
+descendants.
+Lemma 11.2.
+Let Fk be the Fibonacci numbers defined (in Section 1.2) by F0 = 1, F1 = 1, and
+Fk = Fk−1 + Fk−2. Any node of rank R ≥1 has at least FR+1 descendants (including
+itself).
+Proof.
+Let SR be the smallest tree of rank R. Clearly, S0 = 1 and S1 = 2. By Lemma 11.1,
+a tree of rank R must have subtrees of rank at least R −2, R −3, . . . , 1, and 0, plus
+another subtree, which has at least one node. Along with the root of SR itself, this gives
+a minimum value for SR>1 of SR = 2 + R−2
+i=0 Si. It is easy to show that SR = FR+1
+(Exercise 1.11(a)).
+Because it is well known that the Fibonacci numbers grow exponentially, it immediately follows that any node with s descendants has rank at most O(log s). Thus, we
+have
+Lemma 11.3.
+The rank of any node in a Fibonacci heap is O(log N).
+Proof.
+Immediate from the discussion above.
+If all we were concerned about were the time bounds for the merge, insert, and
+deleteMin operations, then we could stop here and prove the desired amortized time
+bounds. Of course, the whole point of Fibonacci heaps is to obtain an O(1) time bound for
+decreaseKey as well.
+The actual time required for a decreaseKey operation is 1 plus the number of cascading
+cuts that are performed during the operation. Since the number of cascading cuts could be
+much more than O(1), we will need to pay for this with a loss in potential. If we look at
+Figure 11.20, we see that the number of trees actually increases with each cascading cut, so
+we will have to enhance the potential function to include something that decreases during
+cascading cuts. Notice that we cannot just throw out the number of trees from the potential
+function, since then we will not be able to prove the time bound for the merge operation.
+Looking at Figure 11.20 again, we see that a cascading cut causes a decrease in the number
+of marked nodes, because each node that is the victim of a cascading cut becomes an
+unmarked root. Since each cascading cut costs 1 unit of actual time and increases the tree
+potential by 1, we will count each marked node as two units of potential. This way, we
+have a chance of canceling out the number of cascading cuts.
+Theorem 11.4.
+The amortized time bounds for Fibonacci heaps are O(1) for insert, merge, and
+decreaseKey and O(log N) for deleteMin.
+11.5
+Splay Trees
+531
+Proof.
+The potential is the number of trees in the collection of Fibonacci heaps plus twice the
+number of marked nodes. As usual, the initial potential is 0 and is always nonnegative.
+Thus, over a sequence of operations, the total amortized time is an upper bound on
+the total actual time.
+For the merge operation, the actual time is constant, and the number of trees and
+marked nodes is unchanged, so, by Equation (11.2), the amortized time is O(1).
+For the insert operation, the actual time is constant, the number of trees increases
+by 1, and the number of marked nodes is unchanged. Thus, the potential increases by
+at most 1, so the amortized time is O(1).
+For the deleteMin operation, let R be the rank of the tree that contains the minimum
+element, and let T be the number of trees before the operation. To perform a deleteMin,
+we once again split the children of a tree, creating an additional R new trees. Notice
+that, although this can remove marked nodes (by making them unmarked roots), this
+cannot create any additional marked nodes. These R new trees, along with the other T
+trees, must now be merged, at a cost of T+R+log N = T+O(log N), by Lemma 11.3.
+Since there can be at most O(log N) trees, and the number of marked nodes cannot
+increase, the potential change is at most O(log N) −T. Adding the actual time and
+potential change gives the O(log N) amortized bound for deleteMin.
+Finally, for the decreaseKey operation, let C be the number of cascading cuts. The
+actual cost of a decreaseKey is C + 1, which is the total number of cuts performed. The
+first (noncascading) cut creates a new tree and thus increases the potential by 1. Each
+cascading cut creates a new tree but converts a marked node to an unmarked (root)
+node, for a net loss of one unit per cascading cut. The last cut also can convert an
+unmarked node (in Figure 11.20 it is node 5) into a marked node, thus increasing the
+potential by 2. The total change in potential is thus at most 3 −C. Adding the actual
+time and the potential change gives a total of 4, which is O(1).
+11.5 Splay Trees
+As a final example, we analyze the running time of splay trees. Recall, from Chapter 4, that
+after an access of some item X is performed, a splaying step moves X to the root by a series
+of three operations: zig, zig-zag, and zig-zig. These tree rotations are shown in Figure 11.21.
+We adopt the convention that if a tree rotation is being performed at node X, then prior to
+the rotation P is its parent and (if X is not a child of the root) G is its grandparent.
+Recall that the time required for any tree operation on node X is proportional to the
+number of nodes on the path from the root to X. If we count each zig operation as one
+rotation and each zig-zig or zig-zag as two rotations, then the cost of any access is equal to
+1 plus the number of rotations.
+In order to show an O(log N) amortized bound for the splaying step, we need a potential function that can increase by at most O(log N) over the entire splaying step but that
+will also cancel out the number of rotations performed during the step. It is not at all easy
+to find a potential function that satisfies these criteria. A simple first guess at a potential
+532
+Chapter 11
+Amortized Analysis
+P
+X
+C
+B
+A
+X
+P
+A
+C
+B
+G
+D
+P
+X
+A
+C
+B
+X
+P
+G
+A
+B
+C
+D
+X
+B
+A
+P
+C
+G
+D
+X
+A
+P
+B
+G
+C
+D
+Figure 11.21 zig, zig-zag, and zig-zig operations; each has a symmetric case (not shown)
+function might be the sum of the depths of all the nodes in the tree. This does not work,
+because the potential can increase by (N) during an access. A canonical example of this
+occurs when elements are inserted in sequential order.
+A potential function that does work is defined as
+(T) =
+
+i∈T
+log S(i)
+where S(i) represents the number of descendants of i (including i itself). The potential
+function is the sum, over all nodes i in the tree T, of the logarithm of S(i).
+To simplify the notation, we will define
+R(i) = log S(i)
+This makes
+(T) =
+
+i∈T
+R(i)
+R(i) represents the rank of node i. The terminology is similar to what we used in the
+analysis of the disjoint set algorithm, binomial queues, and Fibonacci heaps. In all these
+data structures, the meaning of rank is somewhat different, but the rank is generally meant
+to be on the order (magnitude) of the logarithm of the size of the tree. For a tree T with N
+11.5
+Splay Trees
+533
+nodes, the rank of the root is simply R(T) = log N. Using the sum of ranks as a potential
+function is similar to using the sum of heights as a potential function. The important
+difference is that while a rotation can change the heights of many nodes in the tree, only
+X, P, and G can have their ranks changed.
+Before proving the main theorem, we need the following lemma.
+Lemma 11.4.
+If a + b ≤c, and a and b are both positive integers, then
+log a + log b ≤2 log c −2
+Proof.
+By the arithmetic-geometric mean inequality,
+√
+ab ≤(a + b)/2
+Thus
+√
+ab ≤c/2
+Squaring both sides gives
+ab ≤c2/4
+Taking logarithms of both sides proves the lemma.
+With the preliminaries taken care of, we are ready to prove the main theorem.
+Theorem 11.5.
+The amortized time to splay a tree with root T at node X
+is at most
+3(R(T) −R(X)) + 1 = O(log N).
+Proof.
+The potential function is the sum of the ranks of the nodes in T.
+If X is the root of T, then there are no rotations, so there is no potential change.
+The actual time is 1 to access the node; thus, the amortized time is 1 and the theorem
+is true. Thus, we may assume that there is at least one rotation.
+For any splaying step, let Ri(X) and Si(X) be the rank and size of X before
+the step, and let Rf(X) and Sf(X) be the rank and size of X immediately after the
+splaying step. We will show that the amortized time required for a zig is at most
+3(Rf(X) −Ri(X)) + 1 and that the amortized time for either a zig-zag or zig-zig is
+at most 3(Rf(X) −Ri(X)). We will show that when we add over all steps, the sum
+telescopes to the desired time bound.
+Zig step: For the zig step, the actual time is 1 (for the single rotation), and the
+potential change is Rf(X) + Rf(P) −Ri(X) −Ri(P). Notice that the potential change is
+easy to compute, because only X’s and P’s trees change size. Thus, using AT to represent
+amortized time,
+ATzig = 1 + Rf(X) + Rf(P) −Ri(X) −Ri(P)
+534
+Chapter 11
+Amortized Analysis
+From Figure 11.21 we see that Si(P) ≥Sf(P); thus, it follows that Ri(P) ≥Rf(P). Thus,
+ATzig ≤1 + Rf(X) −Ri(X)
+Since Sf(X) ≥Si(X), it follows that Rf(X) −Ri(X) ≥0, so we may increase the right
+side, obtaining
+ATzig ≤1 + 3(Rf(X) −Ri(X))
+Zig-zag step: For the zig-zag case, the actual cost is 2, and the potential change is
+Rf(X) + Rf(P) + Rf(G) −Ri(X) −Ri(P) −Ri(G). This gives an amortized time bound of
+ATzig-zag = 2 + Rf(X) + Rf(P) + Rf(G) −Ri(X) −Ri(P) −Ri(G)
+From Figure 11.21 we see that Sf(X) = Si(G), so their ranks must be equal. Thus, we
+obtain
+ATzig-zag = 2 + Rf(P) + Rf(G) −Ri(X) −Ri(P)
+We also see that Si(P) ≥Si(X). Consequently, Ri(X) ≤Ri(P). Making this substitution
+gives
+ATzig-zag ≤2 + Rf(P) + Rf(G) −2Ri(X)
+From Figure 11.21 we see that Sf(P) + Sf(G) ≤Sf(X). If we apply Lemma 11.4, we
+obtain
+log Sf(P) + log Sf(G) ≤2 log Sf(X) −2
+By the definition of rank, this becomes
+Rf(P) + Rf(G) ≤2Rf(X) −2
+Substituting this, we obtain
+ATzig-zag ≤2Rf(X) −2Ri(X)
+≤2(Rf(X) −Ri(X))
+Since Rf(X) ≥Ri(X), we obtain
+ATzig-zag ≤3(Rf(X) −Ri(X))
+Zig-zig step: The third case is the zig-zig. The proof of this case is very similar
+to the zig-zag case. The important inequalities are Rf(X) = Ri(G), Rf(X) ≥Rf(P),
+Ri(X) ≤Ri(P), and Si(X) + Sf(G) ≤Sf(X). We leave the details as Exercise 11.8.
+The amortized cost of an entire splay is the sum of the amortized costs of each
+splay step. Figure 11.22 shows the steps that are performed in a splay at node 2. Let
+R1(2), R2(2), R3(2), and R4(2) be the rank of node 2 in each of the four trees. The cost
+of the first step, which is a zig-zag, is at most 3(R2(2) −R1(2)). The cost of the second
+step, which is a zig-zig, is 3(R3(2) −R2(2)). The last step is a zig and has cost no larger
+than 3(R4(2) −R3(2)) + 1. The total cost thus telescopes to 3(R4(2) −R1(2)) + 1.
+11.5
+Splay Trees
+535
+7
+6
+5
+4
+1
+2
+3
+3
+2
+7
+6
+5
+1
+5
+5
+2
+4
+6
+4
+6
+1
+4
+3
+7
+2
+1
+7
+3
+Figure 11.22 The splaying steps involved in splaying at node 2
+In general, by adding up the amortized costs of all the rotations, of which at most
+one can be a zig, we see that the total amortized cost to splay at node X is at most
+3(Rf(X) −Ri(X)) + 1, where Ri(X) is the rank of X before the first splaying step and
+Rf(X) is the rank of X after the last splaying step. Since the last splaying step leaves X
+at the root, we obtain an amortized bound of 3(R(T) −Ri(X)) + 1, which is O(log N).
+Because every operation on a splay tree requires a splay, the amortized cost of any
+operation is within a constant factor of the amortized cost of a splay. Thus, all splay tree
+access operations take O(log N) amortized time. To show that insertions and deletions take
+O(log N), amortized time, potential changes that occur either prior to or after the splaying
+step should be accounted for.
+In the case of insertion, assume we are inserting into an N−1 node tree. Thus, after the
+insertion, we have an N-node tree, and the splaying bound applies. However, the insertion
+at the leaf node adds potential prior to the splay to each node on the path from the leaf
+node to the root. Let n1, n2, . . . , nk be the nodes on the path prior to the insertion of the
+leaf (nk is the root), and assume they have sizes s1, s2, . . . , sk. After the insertions, the sizes
+are s1 + 1, s2 + 1, . . . , sk + 1. (The leaf will contribute 0 to the potential so we can ignore
+it.) Note that (excluding the root node) sj + 1 ≤sj+1, so the new rank of nj is no more
+than the old rank of nj+1. Thus, the increase of ranks, which is the maximum increase in
+potential that results from adding a new leaf, is limited by the new rank of the root, which
+is O(log N).
+A deletion consists of a nonsplaying step that attaches one tree to another. This does
+increase the rank of one node, but that is limited by log N (and is compensated by the
+removal of a node, which at the time was a root). Thus the splaying costs accurately bound
+the cost of a deletion.
+By using a more general potential function, it is possible to show that splay trees have
+several remarkable properties. This is discussed in more detail in the exercises.
+536
+Chapter 11
+Amortized Analysis
+Summary
+In this chapter, we have seen how an amortized analysis can be used to apportion charges
+among operations. To perform the analysis, we invent a fictitious potential function. The
+potential function measures the state of the system. A high-potential data structure is
+volatile, having been built on relatively cheap operations. When the expensive bill comes
+for an operation, it is paid for by the savings of previous operations. One can view potential
+as standing for potential for disaster, in that very expensive operations can occur only when
+the data structure has a high potential and has used considerably less time than has been
+allocated.
+Low potential in a data structure means that the cost of each operation has been
+roughly equal to the amount allocated for it. Negative potential means debt; more time has
+been spent than has been allocated, so the allocated (or amortized) time is not a meaningful
+bound.
+As expressed by Equation (11.2), the amortized time for an operation is equal to the
+sum of the actual time and potential change. Taken over an entire sequence of operations,
+the amortized time for the sequence is equal to the total sequence time plus the net change
+in potential. As long as this net change is positive, then the amortized bound provides an
+upper bound for the actual time spent and is meaningful.
+The keys to choosing a potential function are to guarantee that the minimum potential
+occurs at the beginning of the algorithm, and to have the potential increase for cheap
+operations and decrease for expensive operations. It is important that the excess or saved
+time be measured by an opposite change in potential. Unfortunately, this is sometimes
+easier said than done.
+Exercises
+11.1
+When do M consecutive insertions into a binomial queue take less than 2M time
+units?
+11.2
+Suppose a binomial queue of N = 2k −1 elements is built. Alternately perform
+M insert and deleteMin pairs. Clearly, each operation takes O(log N) time. Why
+does this not contradict the amortized bound of O(1) for insertion?
+⋆11.3
+Show that the amortized bound of O(log N) for the skew heap operations
+described in the text cannot be converted to a worst-case bound, by giving a
+sequence of operations that lead to a merge requiring (N) time.
+⋆11.4
+Show how to merge two skew heaps with one top-down pass and reduce the merge
+cost to O(1) amortized time.
+11.5
+Extend skew heaps to support the decreaseKey operation in O(log N) amortized
+time.
+11.6
+Implement Fibonacci heaps and compare their performance with that of binary
+heaps when used in Dijkstra’s algorithm.
+Exercises
+537
+11.7
+A standard implementation of Fibonacci heaps requires four links per node
+(parent, child, and two siblings). Show how to reduce the number of links, at
+the cost of at most a constant factor in the running time.
+11.8
+Show that the amortized time of a zig-zig splay is at most 3(Rf(X) −Ri(X)).
+11.9
+By changing the potential function, it is possible to prove different bounds for
+splaying. Let the weight function W(i) be some function assigned to each node in
+the tree, and let S(i) be the sum of the weights of all the nodes in the subtree
+rooted at i, including i itself. The special case W(i) = 1 for all nodes corresponds
+to the function used in the proof of the splaying bound. Let N be the number of
+nodes in the tree, and let M be the number of accesses. Prove the following two
+theorems:
+a. The total access time is O(M + (M + N) log N).
+⋆b. If qi is the number of times that item i is accessed, and qi > 0 for all i, then the
+total access time is
+O
+/
+M +
+N
+
+i=1
+qi log(M/qi)
+0
+11.10
+a. Show how to implement the merge operation on splay trees so that any
+sequence of N−1 merges starting from N single-element trees takes O(N log2 N)
+time.
+⋆b. Improve the bound to O(N log N).
+11.11
+In Chapter 5, we described rehashing: When a table becomes more than half full,
+a new table twice as large is constructed, and the entire old table is rehashed. Give
+a formal amortized analysis, with potential function, to show that the amortized
+cost of an insertion is still O(1).
+11.12
+What is the maximum depth of a Fibonacci heap?
+11.13
+A deque with heap order is a data structure consisting of a list of items, on which
+the following operations are possible:
+push(x): Insert item x on the front end of the deque.
+pop(): Remove the front item from the deque and return it.
+inject(x): Insert item x on the rear end of the deque.
+eject(): Remove the rear item from the deque and return it.
+findMin(): Return the smallest item from the deque (breaking ties arbitrarily).
+a. Describe how to support these operations in constant amortized time per
+operation.
+⋆⋆b. Describe how to support these operations in constant worst-case time per
+operation.
+11.14
+Show that the binomial queues actually support merging in O(1) amortized time.
+Define the potential of a binomial queue to be the number of trees plus the rank
+of the largest tree.
+538
+Chapter 11
+Amortized Analysis
+11.15
+Suppose that in an attempt to save time, we splay on every second tree operation.
+Does the amortized cost remain logarithmic?
+11.16
+Using the potential function in the proof of the splay tree bound, what is the
+maximum and minimum potential of a splay tree? By how much can the potential
+function decrease in one splay? By how much can the potential function increase
+in one splay? You may give Big-Oh answers.
+11.17
+As a result of a splay, most of the nodes on the access path are moved halfway
+towards the root, while a couple of nodes on the path move down one level. This
+suggests using the sum over all nodes of the logarithm of each node’s depth as a
+potential function.
+a. What is the maximum value of the potential function?
+b. What is the minimum value of the potential function?
+c. The difference in the answers to parts (a) and (b) gives some indication that
+this potential function isn’t too good. Show that a splaying operation could
+increase the potential by (N/ log N).
+References
+An excellent survey of amortized analysis is provided in [10].
+Most of the references below duplicate citations in earlier chapters. We cite them again
+for convenience and completeness. Binomial queues were first described in [11] and analyzed in [1]. Solutions to Exercises 11.3 and 11.4 appear in [9]. Fibonacci heaps are
+described in [3]. Exercise 11.9(a) shows that splay trees are optimal, to within a constant
+factor of the best static search trees. Exercise 11.9(b) shows that splay trees are optimal, to
+within a constant factor of the best optimal search trees. These, as well as two other strong
+results, are proved in the original splay tree paper [7].
+Amortization is used in [2] to merge a balanced seach tree efficiently. The merge operation for splay trees is described in [6]. A solution to Exercise 11.13 can be found in [4].
+Exercise 11.14 is from [5].
+Amortized analysis is used in [8] to design an online algorithm that processes a series
+of queries in time only a constant factor larger than any off-line algorithm in its class.
+1. M. R. Brown, “Implementation and Analysis of Binomial Queue Algorithms,” SIAM Journal
+on Computing, 7 (1978), 298–319.
+2. M. R. Brown and R. E. Tarjan, “Design and Analysis of a Data Structure for Representing
+Sorted Lists,” SIAM Journal on Computing, 9 (1980), 594–614.
+3. M. L. Fredman and R. E. Tarjan, “Fibonacci Heaps and Their Uses in Improved Network
+Optimization Algorithms,” Journal of the ACM, 34 (1987), 596–615.
+4. H. Gajewska and R. E. Tarjan, “Deques with Heap Order,” Information Processing Letters,
+22 (1986), 197–200.
+5. C. M. Khoong and H. W. Leong, “Double-Ended Binomial Queues,” Proceedings of the
+Fourth Annual International Symposium on Algorithms and Computation (1993), 128–137.
+References
+539
+6. G. Port and A. Moffat, “A Fast Algorithm for Melding Splay Trees,” Proceedings of First
+Workshop on Algorithms and Data Structures (1989), 450–459.
+7. D. D. Sleator and R. E. Tarjan, “Self-adjusting Binary Search Trees,” Journal of the ACM, 32
+(1985), 652–686.
+8. D. D. Sleator and R. E. Tarjan, “Amortized Efficiency of List Update and Paging Rules,”
+Communications of the ACM, 28 (1985), 202–208.
+9. D. D. Sleator and R. E. Tarjan, “Self-adjusting Heaps,” SIAM Journal on Computing, 15
+(1986), 52–69.
+10. R. E. Tarjan, “Amortized Computational Complexity,” SIAM Journal on Algebraic and
+Discrete Methods, 6 (1985), 306–318.
+11. J. Vuillemin, “A Data Structure for Manipulating Priority Queues,” Communications of the
+ACM, 21 (1978), 309–314.
+This page intentionally left blank
